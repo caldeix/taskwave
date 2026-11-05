@@ -2,17 +2,19 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Columns3, Inbox, Layers, Plus } from 'lucide-vue-next'
+import { Inbox, Layers, Plus } from 'lucide-vue-next'
 import MonthCalendar from '@/components/calendar/MonthCalendar.vue'
 import UndatedPanel from '@/components/calendar/UndatedPanel.vue'
 import ViewSwitch from '@/components/layout/ViewSwitch.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import NewTaskDialog from '@/components/tasks/NewTaskDialog.vue'
-import ProvisionalTaskList from '@/components/tasks/ProvisionalTaskList.vue'
+import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useLiveTasks } from '@/composables/useLiveTasks'
-import { rangeQueries, undatedQuery } from '@/data/taskQueries'
+import { closedSinceQuery, openQuery, rangeQueries, undatedQuery } from '@/data/taskQueries'
+import { CLOSED_WINDOWS, closedSinceMs, nextClosedWindow, type ClosedWindow } from '@/domain/kanban'
+import type { TaskStatus } from '@/domain/status'
 import {
   formatMonthParam,
   gridRange,
@@ -21,7 +23,7 @@ import {
   shiftMonth,
 } from '@/domain/calendar'
 import { todayKey, type DayKey } from '@/domain/dates'
-import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
+import { PROJECT_COLOR_CLASSES, type Project } from '@/domain/projects'
 import type { Task, TaskScope } from '@/domain/task'
 import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
 import { db } from '@/lib/firebase'
@@ -33,7 +35,7 @@ import { useToastsStore } from '@/stores/toasts'
 
 /**
  * Vista principal: «Todos», «Sin proyecto» o un proyecto (step-8), en modo calendario
- * (step-11) o kanban (step-12; de momento, un marcador con la lista provisional).
+ * (step-11) o kanban (step-12).
  */
 const props = defineProps<{ scope: 'all' | 'inbox' | 'project' }>()
 
@@ -86,8 +88,9 @@ const month = computed(() => parseMonthParam(route.query.mes))
 const visibleRange = computed(() => gridRange(monthGrid(month.value)))
 const today = ref<DayKey>(todayKey())
 
+// Cada vista escucha solo sus consultas, para no gastar lecturas en la que no se ve.
 const { tasks: gridTasks } = useLiveTasks(() =>
-  uid.value && taskScope.value
+  view.value === 'calendar' && uid.value && taskScope.value
     ? {
         key: `grid:${uid.value}:${scopeKey.value}:${visibleRange.value.from}`,
         queries: rangeQueries(db, uid.value, visibleRange.value, taskScope.value),
@@ -95,13 +98,40 @@ const { tasks: gridTasks } = useLiveTasks(() =>
     : null,
 )
 const { tasks: undatedTasks } = useLiveTasks(() =>
-  uid.value && taskScope.value
+  view.value === 'calendar' && uid.value && taskScope.value
     ? {
         key: `undated:${uid.value}:${scopeKey.value}`,
         queries: [undatedQuery(db, uid.value, taskScope.value)],
       }
     : null,
 )
+
+// ---- Kanban (step-12): abiertas + cerradas del periodo (D-36) ----
+const closedWindow = ref<ClosedWindow>(CLOSED_WINDOWS[0])
+const { tasks: boardTasks } = useLiveTasks(() =>
+  view.value === 'kanban' && uid.value && taskScope.value
+    ? {
+        key: `board:${uid.value}:${scopeKey.value}:${closedWindow.value}`,
+        queries: [
+          openQuery(db, uid.value, taskScope.value),
+          closedSinceQuery(db, uid.value, taskScope.value, closedSinceMs(closedWindow.value)),
+        ],
+      }
+    : null,
+)
+
+/** En «Todos» cada tarjeta muestra su proyecto; dentro de un proyecto no hace falta. */
+function projectOf(task: Task): Project | undefined {
+  return props.scope === 'all' && task.projectId ? projectsStore.byId(task.projectId) : undefined
+}
+
+async function setStatus(task: Task, status: TaskStatus): Promise<void> {
+  try {
+    await tasksStore.setStatus(task, status)
+  } catch {
+    toasts.show(t('kanban.moveFailed', { key: task.key }), 'error')
+  }
+}
 
 function changeMonth(delta: number): void {
   void router.replace({
@@ -159,12 +189,7 @@ function openTask(task: Task): void {
   toasts.show(t('calendar.detailSoon', { key: task.key }), 'warning', 3000)
 }
 
-// ---- Borrado (step-10), desde la lista provisional del kanban ----
-const listedTasks = computed(() => {
-  const merged = new Map<string, Task>()
-  for (const task of [...gridTasks.value, ...undatedTasks.value]) merged.set(task.id, task)
-  return [...merged.values()]
-})
+// ---- Borrado (step-10), desde el menú de las tarjetas del kanban ----
 const deleting = ref<Task | null>(null)
 const deletingBusy = ref(false)
 
@@ -250,18 +275,18 @@ async function confirmDelete(): Promise<void> {
         <UndatedPanel :tasks="undatedTasks" @open-task="openTask" />
       </div>
 
-      <!-- Kanban: marcador provisional hasta el step-12 -->
-      <template v-else>
-        <section
-          class="flex min-h-60 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-500 p-8 text-center dark:border-gray-400"
-        >
-          <Columns3 class="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden="true" />
-          <p class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
-            {{ t('views.kanbanSoon') }}
-          </p>
-        </section>
-        <ProvisionalTaskList :tasks="listedTasks" @delete="deleting = $event" />
-      </template>
+      <!-- Kanban (step-12) -->
+      <KanbanBoard
+        v-else
+        :tasks="boardTasks"
+        :today="today"
+        :project-of="projectOf"
+        :closed-window="closedWindow"
+        @move="setStatus"
+        @open="openTask"
+        @delete="deleting = $event"
+        @more-closed="closedWindow = nextClosedWindow(closedWindow)"
+      />
     </template>
 
     <NewTaskDialog

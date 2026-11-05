@@ -58,11 +58,20 @@ const es = {
     label: 'Vista',
     calendar: 'Calendario',
     kanban: 'Kanban',
-    kanbanSoon: 'El kanban llega en el step-12.',
     allSubtitle: 'Tareas de todos tus proyectos.',
     inboxSubtitle: 'Tareas que no pertenecen a ningún proyecto.',
     projectSubtitle: 'Clave {key}: sus tareas se numeran {key}-1, {key}-2…',
     projectNotFound: 'Ese proyecto no existe o se ha borrado.',
+  },
+  kanban: {
+    empty: 'Sin tareas.',
+    moveTo: 'Mover a {status}',
+    cardActions: 'Acciones de {key}',
+    overdue: '(atrasada)',
+    closedWindow: 'Cerradas en los últimos {days} días.',
+    closedAll: 'Todas las cerradas.',
+    showOlder: 'Ver más antiguas',
+    moveFailed: 'No se pudo cambiar el estado de {key}. Vuelve a intentarlo.',
   },
   calendar: {
     today: 'Hoy',
@@ -86,11 +95,6 @@ const es = {
     created: 'Tarea {key} creada.',
     deleted: 'Tarea {key} eliminada.',
     deleteFailed: 'No se pudo eliminar la tarea. Vuelve a intentarlo.',
-    noDate: 'Sin fecha',
-    deleteLabel: 'Eliminar {key}',
-    provisionalList:
-      'Tareas del mes del calendario y sin fecha (lista provisional hasta el kanban, para poder borrar)',
-    emptyList: 'No hay tareas en este mes ni sin fecha.',
     fields: {
       title: 'Título',
       project: 'Proyecto',
