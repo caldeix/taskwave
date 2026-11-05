@@ -21,6 +21,9 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Componentes de formulario del DS: `BaseInput`, `FormMessage` y `TextLink`.
 - Perfil `users/{uid}`: se crea al primer acceso con el correo verificado, siempre pendiente y sin admin, y se escucha en vivo.
 - Pantallas de cuenta pendiente de aprobación, bloqueada y error al cargar la cuenta (con reintento). Al aprobar o bloquear una cuenta, la app redirige sin recargar.
+- Panel de admin de usuarios (`/admin/usuarios`, solo para el admin activo): filtros por estado con contadores, búsqueda por nombre o correo sin distinguir tildes, y acciones de aprobar, bloquear (con confirmación) y reactivar. El admin no actúa sobre su propia cuenta.
+- Contador de altas pendientes en vivo junto al acceso al panel (D-9).
+- Componentes `ConfirmDialog` (con `<dialog>` nativo) y `UserStatusBadge`, y formato de fechas en español con la hora de Madrid.
 - Reglas de Firestore para los datos de cada usuario (proyectos, tareas, comentarios, actividad, registro de horas y tags): solo el dueño con la cuenta activa y el correo verificado; el admin no tiene acceso. Cada documento se valida entero: campos permitidos, tipos, enumerados, tamaños máximos, fechas `AAAA-MM-DD`, marcas de tiempo del servidor y fecha fin no anterior al inicio.
 - 54 tests de reglas con `@firebase/rules-unit-testing` (`npm run test:rules`), en su propio proyecto `demo-taskwave-rules`.
 - Reglas de Firestore del perfil: cada usuario lee el suyo; solo el admin lista los perfiles y cambia el estado de otros; nadie puede darse admin ni cambiarse el estado; un usuario bloqueado no puede borrar su perfil.
