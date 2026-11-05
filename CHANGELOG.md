@@ -19,3 +19,6 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Guardas de ruta por sesión: sin sesión se va al login (con vuelta a la ruta pedida, solo si es interna); con el correo sin verificar, solo se ve la pantalla de verificación.
 - La recuperación de contraseña muestra el mismo mensaje exista o no la cuenta.
 - Componentes de formulario del DS: `BaseInput`, `FormMessage` y `TextLink`.
+- Perfil `users/{uid}`: se crea al primer acceso con el correo verificado, siempre pendiente y sin admin, y se escucha en vivo.
+- Pantallas de cuenta pendiente de aprobación, bloqueada y error al cargar la cuenta (con reintento). Al aprobar o bloquear una cuenta, la app redirige sin recargar.
+- Reglas de Firestore del perfil: cada usuario lee el suyo; solo el admin lista los perfiles y cambia el estado de otros; nadie puede darse admin ni cambiarse el estado; un usuario bloqueado no puede borrar su perfil.
