@@ -203,12 +203,24 @@ service cloud.firestore {
           && data.createdAt is timestamp
           && data.updatedAt is timestamp;
       }
+      // Subtareas de un solo nivel (D-41): la padre existe, no es la propia tarea y no es a su vez
+      // subtarea. Solo se comprueba (1 lectura más) cuando cambia `parentId`. Que una tarea con
+      // subtareas no pase a ser subtarea lo controla la app (las reglas no pueden consultar).
+      function isValidParent(uid, taskId, data) {
+        return data.parentId == null
+          || (data.parentId != taskId
+              && exists(/databases/$(database)/documents/users/$(uid)/tasks/$(data.parentId))
+              && get(/databases/$(database)/documents/users/$(uid)/tasks/$(data.parentId)).data.parentId == null);
+      }
       match /tasks/{taskId} {
         allow read, delete: if isActiveOwner(uid);
         allow create: if isActiveOwner(uid) && isValidTask(request.resource.data)
-          && stampsOnCreate(request.resource.data);
+          && stampsOnCreate(request.resource.data)
+          && isValidParent(uid, taskId, request.resource.data);
         allow update: if isActiveOwner(uid) && isValidTask(request.resource.data)
-          && stampsOnUpdate(request.resource.data);
+          && stampsOnUpdate(request.resource.data)
+          && (request.resource.data.parentId == resource.data.parentId
+              || isValidParent(uid, taskId, request.resource.data));
 
         // -------------------------------------------------------- comentarios
         match /comments/{commentId} {
