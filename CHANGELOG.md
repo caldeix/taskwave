@@ -21,6 +21,9 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Componentes de formulario del DS: `BaseInput`, `FormMessage` y `TextLink`.
 - Perfil `users/{uid}`: se crea al primer acceso con el correo verificado, siempre pendiente y sin admin, y se escucha en vivo.
 - Pantallas de cuenta pendiente de aprobación, bloqueada y error al cargar la cuenta (con reintento). Al aprobar o bloquear una cuenta, la app redirige sin recargar.
+- Barra de filtros: ojo de estados visibles (oculta columnas del kanban y barras del calendario), periodo (hoy, esta semana, este mes, este año; entran las tareas que tocan el periodo), orden (por fecha fin o inicio, por inicio o por fin, en los dos sentidos), tags (cualquiera o todos), prioridad, «Atrasadas» y «Sin fecha», con «Quitar filtros». En el calendario el periodo es el mes visible, así que el periodo, el orden y «Sin fecha» solo salen en el kanban.
+- Los filtros se guardan en las preferencias del usuario (los mismos en todos los proyectos y dispositivos), juntando los cambios seguidos en una sola escritura.
+- Las tareas con fin igual al inicio muestran una sola fecha.
 - Kanban con una columna por estado y orden automático: por fecha fin o, si no tiene, de inicio, de la más próxima a la más lejana, con las atrasadas arriba en coral y las que no tienen fecha al final. En «Todos», cada tarjeta muestra su proyecto.
 - Cambiar de estado arrastrando una tarjeta a otra columna o desde su menú («Mover a…»). Al cerrar se guarda cuándo y, si no tenía fecha fin, se le pone hoy; al reabrir se borra la fecha de cierre.
 - Las columnas cerradas muestran las cerradas en los últimos 30 días, con «Ver más antiguas» (90, 365 días o todas).
