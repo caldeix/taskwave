@@ -5,10 +5,12 @@ import { useI18n } from 'vue-i18n'
 import { ArrowLeft, PanelRightClose, PanelRightOpen, Trash2 } from 'lucide-vue-next'
 import TaskDescription from '@/components/task/TaskDescription.vue'
 import TaskDetailsPanel from '@/components/task/TaskDetailsPanel.vue'
+import TaskRelations from '@/components/task/TaskRelations.vue'
 import TaskTitle from '@/components/task/TaskTitle.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useLiveTasks } from '@/composables/useLiveTasks'
+import { useRelatedTasks } from '@/composables/useRelatedTasks'
 import { taskByKeyQuery } from '@/data/taskQueries'
 import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
 import type { Task } from '@/domain/task'
@@ -21,8 +23,8 @@ import { useToastsStore } from '@/stores/toasts'
 /**
  * Vista de una tarea (step-14, D-23): sustituye al calendario o al kanban, tiene su URL
  * (`/t/EST-12`) y el panel de datos a la derecha, plegable. La descripción es markdown
- * (step-15); los vínculos, los comentarios, el registro de horas y la actividad llegan en los
- * steps 16 a 22.
+ * (step-15), con sus vínculos y subtareas (step-16); los comentarios, el registro de horas y la
+ * actividad llegan en los steps 18 a 22.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -75,6 +77,9 @@ async function saveTitle(title: string): Promise<void> {
  */
 const moving = ref<Task | null>(null)
 const shown = computed(() => task.value ?? moving.value)
+
+/** Subtareas, padre y vinculadas (step-16). */
+const related = useRelatedTasks(() => shown.value)
 
 async function moveProject(projectId: string | null): Promise<void> {
   if (!task.value) return
@@ -186,14 +191,14 @@ const iconButton =
 
         <TaskDescription :task="shown" />
 
-        <section class="flex flex-col gap-2">
-          <h2 class="m-0 font-text text-sm font-bold text-gray-800 dark:text-white">
-            {{ t('taskView.linkedTasks') }}
-          </h2>
-          <p class="m-0 font-text text-xs text-gray-500 dark:text-gray-400">
-            {{ t('taskView.linksSoon') }}
-          </p>
-        </section>
+        <TaskRelations
+          :task="shown"
+          :by-id="related.byId.value"
+          :parent="related.parent.value"
+          :subtasks="related.subtasks.value"
+          :totals="related.totals.value"
+          :loading="related.loading.value"
+        />
 
         <section class="flex flex-col gap-2">
           <div class="flex gap-4 border-b border-gray-200 dark:border-gray-700" role="tablist">
@@ -228,6 +233,7 @@ const iconButton =
       <TaskDetailsPanel
         v-show="panelOpen"
         :task="shown"
+        :totals="related.totals.value"
         class="lg:border-l lg:border-gray-200 lg:pl-6 dark:lg:border-gray-700"
         @move-project="moveProject"
       />
