@@ -1,4 +1,6 @@
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -14,6 +16,7 @@ import {
 } from 'firebase/firestore'
 import { buildNewTask, removeLinksTo, taskKey, type NewTaskInput } from '@/domain/taskCreate'
 import type { StatusPatch } from '@/domain/kanban'
+import { inverseLink } from '@/domain/links'
 import type { Task, TaskLink } from '@/domain/task'
 import { tasksCollection } from './taskQueries'
 
@@ -237,4 +240,72 @@ export async function deleteTask(db: Firestore, uid: string, task: Task): Promis
     linksCleaned,
     timerCleared,
   }
+}
+
+/**
+ * Vincula dos tareas (step-16, D-41). El vínculo se guarda en las dos, cada una con su tipo
+ * (A bloquea a B → B bloqueada por A), en un lote: o se escriben las dos o ninguna.
+ * `arrayUnion` no repite un vínculo que ya esté y no necesita leer antes, así que funciona sin
+ * conexión y no pisa vínculos añadidos a la vez desde otra pestaña.
+ */
+export async function linkTasks(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  link: TaskLink,
+): Promise<void> {
+  const tasks = tasksCollection(db, uid)
+  const batch = writeBatch(db)
+  batch.update(doc(tasks, taskId), {
+    links: arrayUnion({ type: link.type, taskId: link.taskId }),
+    updatedAt: serverTimestamp(),
+  })
+  batch.update(doc(tasks, link.taskId), {
+    links: arrayUnion(inverseLink(link, taskId)),
+    updatedAt: serverTimestamp(),
+  })
+  await batch.commit()
+}
+
+/**
+ * Quita un vínculo de las dos tareas. Si la otra ya no existe (borrada desde otro sitio), solo
+ * se limpia esta.
+ */
+export async function unlinkTasks(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  link: TaskLink,
+): Promise<void> {
+  const tasks = tasksCollection(db, uid)
+  const self = {
+    links: arrayRemove({ type: link.type, taskId: link.taskId }),
+    updatedAt: serverTimestamp(),
+  }
+  const otherRef = doc(tasks, link.taskId)
+  const other = await getDoc(otherRef)
+  const batch = writeBatch(db)
+  batch.update(doc(tasks, taskId), self)
+  if (other.exists())
+    batch.update(otherRef, {
+      links: arrayRemove(inverseLink(link, taskId)),
+      updatedAt: serverTimestamp(),
+    })
+  await batch.commit()
+}
+
+/**
+ * Pone o quita la tarea padre (subtareas de un nivel, D-41). Las reglas comprueban que la padre
+ * exista y no sea subtarea; que la hija no tenga subtareas lo comprueba la app antes.
+ */
+export async function setTaskParent(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  parentId: string | null,
+): Promise<void> {
+  await updateDoc(doc(tasksCollection(db, uid), taskId), {
+    parentId,
+    updatedAt: serverTimestamp(),
+  })
 }

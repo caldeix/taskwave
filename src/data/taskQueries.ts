@@ -1,6 +1,7 @@
 import {
   Timestamp,
   collection,
+  documentId,
   limit,
   orderBy,
   query,
@@ -100,4 +101,23 @@ export function startedQuery(db: Firestore, uid: string, scope: TaskScope, max =
     orderBy('lastWorkedAt', 'desc'),
     limit(max),
   )
+}
+
+/** Subtareas de una tarea (step-16). Una igualdad simple: no necesita índice compuesto. */
+export function subtasksQuery(db: Firestore, uid: string, parentId: string): Query {
+  return query(tasksCollection(db, uid), where('parentId', '==', parentId))
+}
+
+/**
+ * Tareas por id (vinculadas y padre, step-16), en consultas de 30 como máximo, que es el
+ * límite de `in` en Firestore.
+ */
+export function tasksByIdsQueries(db: Firestore, uid: string, ids: string[]): Query[] {
+  const unique = [...new Set(ids)].sort()
+  const queries: Query[] = []
+  for (let i = 0; i < unique.length; i += 30)
+    queries.push(
+      query(tasksCollection(db, uid), where(documentId(), 'in', unique.slice(i, i + 30))),
+    )
+  return queries
 }

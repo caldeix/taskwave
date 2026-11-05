@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 import {
   createTask,
   deleteTask,
+  linkTasks,
   moveTaskToProject,
+  setTaskParent,
+  unlinkTasks,
   updateTaskDates,
   updateTaskFields,
   updateTaskStatus,
@@ -12,7 +15,7 @@ import {
 import { todayKey } from '@/domain/dates'
 import { statusChangePatch } from '@/domain/kanban'
 import type { TaskStatus } from '@/domain/status'
-import type { Task } from '@/domain/task'
+import type { Task, TaskLink } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from './auth'
@@ -62,5 +65,29 @@ export const useTasksStore = defineStore('tasks', () => {
     return moveTaskToProject(db, requireUid(), task, projectId)
   }
 
-  return { create, remove, setDates, setStatus, updateFields, moveToProject }
+  /** Vincula dos tareas; el vínculo inverso se guarda en la otra (D-41). */
+  function link(task: Task, link: TaskLink): Promise<void> {
+    return linkTasks(db, requireUid(), task.id, link)
+  }
+
+  function unlink(task: Task, link: TaskLink): Promise<void> {
+    return unlinkTasks(db, requireUid(), task.id, link)
+  }
+
+  /** Hace de `taskId` una subtarea de `parentId`, o la suelta con `null`. */
+  function setParent(taskId: string, parentId: string | null): Promise<void> {
+    return setTaskParent(db, requireUid(), taskId, parentId)
+  }
+
+  return {
+    create,
+    remove,
+    setDates,
+    setStatus,
+    updateFields,
+    moveToProject,
+    link,
+    unlink,
+    setParent,
+  }
 })
