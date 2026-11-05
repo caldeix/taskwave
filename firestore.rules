@@ -1,11 +1,88 @@
 rules_version = '2';
 
-// Reglas provisionales: lo deniegan todo, igual que la base de datos de producción recién creada.
-// Las reglas de verdad (propiedad, estado, admin y validación) llegan en el step-6, con sus tests.
+// Reglas de TaskWave.
+// step-5: perfil `users/{uid}` (alta pendiente, lectura propia, aprobación por el admin).
+// step-6: subcolecciones de cada usuario (proyectos, tareas…), validaciones y tests de reglas.
+// Todo lo que no se permite aquí está denegado.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    // ---------------------------------------------------------------- utilidades
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function emailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    // Lee el perfil de quien hace la petición (≈1 lectura extra por petición, D-2).
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isActive() {
+      return signedIn() && emailVerified() && myProfile().status == 'active';
+    }
+    function isAdmin() {
+      return isActive() && myProfile().admin == true;
+    }
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+    function isStringUpTo(value, max) {
+      return value is string && value.size() <= max;
+    }
+
+    // ---------------------------------------------------------------- perfil
+
+    function profileKeys() {
+      return ['email', 'displayName', 'photoURL', 'provider', 'status', 'admin', 'createdAt',
+              'approvedAt', 'approvedBy', 'inboxCounter', 'prefs', 'activeTimer'];
+    }
+
+    // Perfil inicial: siempre pendiente, sin admin y con el correo de la sesión.
+    function isValidNewProfile(data) {
+      return data.keys().hasOnly(profileKeys())
+        && data.keys().hasAll(profileKeys())
+        && data.email == request.auth.token.email
+        && isStringUpTo(data.displayName, 100)
+        && (data.photoURL == null || isStringUpTo(data.photoURL, 2048))
+        && data.provider in ['password', 'google.com']
+        && data.status == 'pending'
+        && data.admin == false
+        && data.createdAt == request.time
+        && data.approvedAt == null
+        && data.approvedBy == null
+        && data.inboxCounter == 0
+        && data.prefs is map
+        && data.activeTimer == null;
+    }
+
+    match /users/{uid} {
+      // Cada uno lee su perfil (también pendiente o bloqueado); el admin, los de todos (D-7).
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+
+      // Alta: solo el propio usuario, con el correo verificado (D-6).
+      allow create: if isOwner(uid) && emailVerified() && isValidNewProfile(request.resource.data);
+
+      // El usuario activo edita sus datos, pero nunca su estado, su admin ni su alta.
+      // El admin solo cambia el estado de otros (nunca el suyo ni el flag admin).
+      allow update: if (
+          isOwner(uid) && isActive()
+          && !changedKeys().hasAny(['email', 'provider', 'status', 'admin', 'createdAt',
+                                    'approvedAt', 'approvedBy'])
+          && request.resource.data.keys().hasOnly(profileKeys())
+        ) || (
+          isAdmin() && uid != request.auth.uid
+          && changedKeys().hasOnly(['status', 'approvedAt', 'approvedBy'])
+          && request.resource.data.status in ['pending', 'active', 'blocked']
+        );
+
+      // Baja propia (P-9). Un usuario bloqueado no puede borrarse para volver a darse de alta.
+      allow delete: if isOwner(uid) && resource.data.status != 'blocked';
     }
   }
 }
