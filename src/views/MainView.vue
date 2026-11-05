@@ -2,20 +2,28 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { CalendarDays, Columns3, Inbox, Layers, Plus } from 'lucide-vue-next'
+import { Columns3, Inbox, Layers, Plus } from 'lucide-vue-next'
+import MonthCalendar from '@/components/calendar/MonthCalendar.vue'
+import UndatedPanel from '@/components/calendar/UndatedPanel.vue'
 import ViewSwitch from '@/components/layout/ViewSwitch.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import NewTaskDialog from '@/components/tasks/NewTaskDialog.vue'
 import ProvisionalTaskList from '@/components/tasks/ProvisionalTaskList.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
-import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
-import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
-import { endOfMonth, startOfMonth } from 'date-fns'
 import { useLiveTasks } from '@/composables/useLiveTasks'
 import { rangeQueries, undatedQuery } from '@/data/taskQueries'
-import { toDayKey, todayKey } from '@/domain/dates'
+import {
+  formatMonthParam,
+  gridRange,
+  monthGrid,
+  parseMonthParam,
+  shiftMonth,
+} from '@/domain/calendar'
+import { todayKey, type DayKey } from '@/domain/dates'
+import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
 import type { Task, TaskScope } from '@/domain/task'
+import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
@@ -24,8 +32,8 @@ import { useTasksStore } from '@/stores/tasks'
 import { useToastsStore } from '@/stores/toasts'
 
 /**
- * Vista principal (step-8): «Todos», «Sin proyecto» o un proyecto, en modo calendario o kanban.
- * El calendario (step-11) y el kanban (step-12) sustituirán al marcador provisional.
+ * Vista principal: «Todos», «Sin proyecto» o un proyecto (step-8), en modo calendario
+ * (step-11) o kanban (step-12; de momento, un marcador con la lista provisional).
  */
 const props = defineProps<{ scope: 'all' | 'inbox' | 'project' }>()
 
@@ -47,28 +55,46 @@ const notFound = computed(() => props.scope === 'project' && projectsStore.loade
 
 const view = computed<MainView>(() => viewFromQuery(route.query.vista, profileStore.prefs.view))
 
-// ---- Datos (step-9): tareas del mes actual y sin fecha del ámbito, en vivo ----
+function setView(next: MainView): void {
+  void router.replace({ query: { ...route.query, vista: viewToQuery(next) } })
+  void profileStore.updatePrefs({ view: next })
+}
+
+const title = computed(() => {
+  if (props.scope === 'all') return t('nav.all')
+  if (props.scope === 'inbox') return t('nav.inbox')
+  return project.value?.name ?? ''
+})
+
+const subtitle = computed(() => {
+  if (props.scope === 'all') return t('views.allSubtitle')
+  if (props.scope === 'inbox') return t('views.inboxSubtitle')
+  return project.value ? t('views.projectSubtitle', { key: project.value.key }) : ''
+})
+
+// ---- Datos en vivo: tareas de la rejilla del mes y sin fecha (steps 9 y 11) ----
 const taskScope = computed<TaskScope | null>(() => {
   if (props.scope === 'all') return { kind: 'all' }
   if (props.scope === 'inbox') return { kind: 'inbox' }
   return project.value ? { kind: 'project', projectId: project.value.id } : null
 })
-const monthRange = computed(() => {
-  const now = new Date()
-  return { from: toDayKey(startOfMonth(now)), to: toDayKey(endOfMonth(now)) }
-})
 const uid = computed(() => authStore.user?.uid ?? null)
 const scopeKey = computed(() => JSON.stringify(taskScope.value))
 
-const { tasks: monthTasks, loading: monthLoading } = useLiveTasks(() =>
+/** Mes del calendario en la URL (`?mes=2026-11`); por defecto, el actual. */
+const month = computed(() => parseMonthParam(route.query.mes))
+const visibleRange = computed(() => gridRange(monthGrid(month.value)))
+const today = ref<DayKey>(todayKey())
+
+const { tasks: gridTasks } = useLiveTasks(() =>
   uid.value && taskScope.value
     ? {
-        key: `month:${uid.value}:${scopeKey.value}:${monthRange.value.from}`,
-        queries: rangeQueries(db, uid.value, monthRange.value, taskScope.value),
+        key: `grid:${uid.value}:${scopeKey.value}:${visibleRange.value.from}`,
+        queries: rangeQueries(db, uid.value, visibleRange.value, taskScope.value),
       }
     : null,
 )
-const { tasks: undatedTasks, loading: undatedLoading } = useLiveTasks(() =>
+const { tasks: undatedTasks } = useLiveTasks(() =>
   uid.value && taskScope.value
     ? {
         key: `undated:${uid.value}:${scopeKey.value}`,
@@ -76,21 +102,69 @@ const { tasks: undatedTasks, loading: undatedLoading } = useLiveTasks(() =>
       }
     : null,
 )
-const liveLoading = computed(() => monthLoading.value || undatedLoading.value)
 
-// ---- Alta y borrado (step-10) ----
-const newTaskOpen = ref(false)
+function changeMonth(delta: number): void {
+  void router.replace({
+    query: { ...route.query, mes: formatMonthParam(shiftMonth(month.value, delta)) },
+  })
+}
+
+function goToday(): void {
+  today.value = todayKey()
+  const query = { ...route.query }
+  delete query.mes
+  void router.replace({ query })
+}
+
+// ---- Alta (step-10) y alta rápida en el calendario (D-22) ----
 /** En un proyecto se crea en él; en «Todos» y «Sin proyecto», en la bandeja (D-11). */
 const defaultProjectId = computed(() =>
   props.scope === 'project' ? (project.value?.id ?? null) : null,
 )
+const newTask = ref<{ startDate: DayKey | null; title: string } | null>(null)
+const creating = ref(false)
 
+async function quickCreate(day: DayKey, taskTitle: string): Promise<void> {
+  creating.value = true
+  try {
+    const created = await tasksStore.create({
+      title: taskTitle,
+      projectId: defaultProjectId.value,
+      startDate: day,
+      endDate: null,
+      priority: 'medium',
+    })
+    toasts.show(t('tasks.created', { key: created.key }))
+  } catch {
+    toasts.show(t('tasks.new.failed'), 'error')
+  } finally {
+    creating.value = false
+  }
+}
+
+// ---- Mover de día (D-21) ----
+async function moveTask(
+  task: Task,
+  dates: { startDate: DayKey; endDate: DayKey | null },
+): Promise<void> {
+  try {
+    await tasksStore.setDates(task, dates)
+  } catch {
+    toasts.show(t('calendar.moveFailed', { key: task.key }), 'error')
+  }
+}
+
+function openTask(task: Task): void {
+  // La vista de tarea llega en el step-14.
+  toasts.show(t('calendar.detailSoon', { key: task.key }), 'warning', 3000)
+}
+
+// ---- Borrado (step-10), desde la lista provisional del kanban ----
 const listedTasks = computed(() => {
   const merged = new Map<string, Task>()
-  for (const task of [...monthTasks.value, ...undatedTasks.value]) merged.set(task.id, task)
+  for (const task of [...gridTasks.value, ...undatedTasks.value]) merged.set(task.id, task)
   return [...merged.values()]
 })
-
 const deleting = ref<Task | null>(null)
 const deletingBusy = ref(false)
 
@@ -108,23 +182,6 @@ async function confirmDelete(): Promise<void> {
     deleting.value = null
   }
 }
-
-function setView(next: MainView): void {
-  void router.replace({ query: { ...route.query, vista: viewToQuery(next) } })
-  void profileStore.updatePrefs({ view: next })
-}
-
-const title = computed(() => {
-  if (props.scope === 'all') return t('nav.all')
-  if (props.scope === 'inbox') return t('nav.inbox')
-  return project.value?.name ?? ''
-})
-
-const subtitle = computed(() => {
-  if (props.scope === 'all') return t('views.allSubtitle')
-  if (props.scope === 'inbox') return t('views.inboxSubtitle')
-  return project.value ? t('views.projectSubtitle', { key: project.value.key }) : ''
-})
 </script>
 
 <template>
@@ -166,44 +223,54 @@ const subtitle = computed(() => {
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <ViewSwitch :model-value="view" @update:model-value="setView" />
-          <BaseButton @click="newTaskOpen = true">
+          <BaseButton @click="newTask = { startDate: today, title: '' }">
             <Plus class="h-4 w-4" aria-hidden="true" />
             {{ t('tasks.newButton') }}
           </BaseButton>
         </div>
       </header>
 
-      <!-- Marcador provisional hasta los steps 11 (calendario) y 12 (kanban) -->
-      <section
-        class="flex min-h-80 flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-500 p-8 text-center dark:border-gray-400"
+      <!-- Calendario mensual con el panel «Sin fecha» (step-11) -->
+      <div
+        v-if="view === 'calendar'"
+        class="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_17rem]"
       >
-        <CalendarDays
-          v-if="view === 'calendar'"
-          class="h-10 w-10 text-gray-500 dark:text-gray-400"
-          aria-hidden="true"
+        <MonthCalendar
+          :month="month"
+          :tasks="gridTasks"
+          :today="today"
+          :creating="creating"
+          @move="moveTask"
+          @quick-create="quickCreate"
+          @open-new="(day, text) => (newTask = { startDate: day, title: text })"
+          @open-task="openTask"
+          @change-month="changeMonth"
+          @go-today="goToday"
         />
-        <Columns3 v-else class="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden="true" />
-        <p class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
-          {{ view === 'calendar' ? t('views.calendarSoon') : t('views.kanbanSoon') }}
-        </p>
-        <!-- Provisional (step-9): comprueba la capa de datos hasta que llegue el calendario -->
-        <p class="m-0 font-text text-sm font-medium text-gray-800 dark:text-white" role="status">
-          <template v-if="liveLoading">{{ t('views.loadingTasks') }}</template>
-          <template v-else>
-            {{ t('views.taskSummary', { month: monthTasks.length, undated: undatedTasks.length }) }}
-          </template>
-        </p>
-      </section>
+        <UndatedPanel :tasks="undatedTasks" @open-task="openTask" />
+      </div>
 
-      <ProvisionalTaskList :tasks="listedTasks" @delete="deleting = $event" />
+      <!-- Kanban: marcador provisional hasta el step-12 -->
+      <template v-else>
+        <section
+          class="flex min-h-60 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-500 p-8 text-center dark:border-gray-400"
+        >
+          <Columns3 class="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+          <p class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
+            {{ t('views.kanbanSoon') }}
+          </p>
+        </section>
+        <ProvisionalTaskList :tasks="listedTasks" @delete="deleting = $event" />
+      </template>
     </template>
 
     <NewTaskDialog
-      :open="newTaskOpen"
+      :open="newTask !== null"
       :project-id="defaultProjectId"
-      :start-date="todayKey()"
-      @close="newTaskOpen = false"
-      @created="newTaskOpen = false"
+      :start-date="newTask?.startDate ?? null"
+      :title="newTask?.title ?? ''"
+      @close="newTask = null"
+      @created="newTask = null"
     />
     <ConfirmDialog
       :open="deleting !== null"
