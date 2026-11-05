@@ -31,6 +31,24 @@ const es = {
     title: 'Página no encontrada',
     back: 'Volver al inicio',
   },
+  account: {
+    pending: {
+      title: 'Cuenta pendiente de aprobación',
+      subtitle:
+        'Tu cuenta {email} está creada. El administrador tiene que activarla antes de que puedas usar TaskWave.',
+      live: 'No hace falta recargar: en cuanto se apruebe, entrarás automáticamente.',
+    },
+    blocked: {
+      title: 'Cuenta bloqueada',
+      subtitle:
+        'El administrador ha bloqueado la cuenta {email}. Si crees que es un error, ponte en contacto con él.',
+    },
+    error: {
+      title: 'No se pudo cargar tu cuenta',
+      subtitle: 'Ha fallado la conexión con el servidor. Comprueba tu red y vuelve a intentarlo.',
+      retry: 'Reintentar',
+    },
+  },
   auth: {
     email: 'Correo electrónico',
     password: 'Contraseña',
