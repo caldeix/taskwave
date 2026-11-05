@@ -14,7 +14,7 @@ import {
   type ActionCodeSettings,
   type User,
 } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { auth, clearLocalData } from '@/lib/firebase'
 import { isUserNotFound, needsEmailVerification } from '@/domain/auth'
 
 // Los correos de Firebase (verificación y recuperación) salen en español.
@@ -96,8 +96,14 @@ export const useAuthStore = defineStore('auth', () => {
     version.value++
   }
 
+  /**
+   * Cierra la sesión, borra la caché local de Firestore (privacidad en equipos compartidos) y
+   * recarga en el login, porque Firestore queda inutilizable tras borrar su caché.
+   */
   async function logout(): Promise<void> {
     await signOut(auth)
+    await clearLocalData()
+    window.location.replace(`${import.meta.env.BASE_URL}login`)
   }
 
   return {
