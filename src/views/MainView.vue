@@ -1,21 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { CalendarDays, Columns3, Inbox, Layers } from 'lucide-vue-next'
+import { CalendarDays, Columns3, Inbox, Layers, Plus } from 'lucide-vue-next'
 import ViewSwitch from '@/components/layout/ViewSwitch.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
+import NewTaskDialog from '@/components/tasks/NewTaskDialog.vue'
+import ProvisionalTaskList from '@/components/tasks/ProvisionalTaskList.vue'
+import BaseButton from '@/components/ui/BaseButton.vue'
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
 import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
 import { endOfMonth, startOfMonth } from 'date-fns'
 import { useLiveTasks } from '@/composables/useLiveTasks'
 import { rangeQueries, undatedQuery } from '@/data/taskQueries'
-import { toDayKey } from '@/domain/dates'
-import type { TaskScope } from '@/domain/task'
+import { toDayKey, todayKey } from '@/domain/dates'
+import type { Task, TaskScope } from '@/domain/task'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { useProjectsStore } from '@/stores/projects'
+import { useTasksStore } from '@/stores/tasks'
+import { useToastsStore } from '@/stores/toasts'
 
 /**
  * Vista principal (step-8): «Todos», «Sin proyecto» o un proyecto, en modo calendario o kanban.
@@ -29,6 +35,8 @@ const router = useRouter()
 const authStore = useAuthStore()
 const profileStore = useProfileStore()
 const projectsStore = useProjectsStore()
+const tasksStore = useTasksStore()
+const toasts = useToastsStore()
 
 const project = computed(() =>
   props.scope === 'project'
@@ -69,6 +77,37 @@ const { tasks: undatedTasks, loading: undatedLoading } = useLiveTasks(() =>
     : null,
 )
 const liveLoading = computed(() => monthLoading.value || undatedLoading.value)
+
+// ---- Alta y borrado (step-10) ----
+const newTaskOpen = ref(false)
+/** En un proyecto se crea en él; en «Todos» y «Sin proyecto», en la bandeja (D-11). */
+const defaultProjectId = computed(() =>
+  props.scope === 'project' ? (project.value?.id ?? null) : null,
+)
+
+const listedTasks = computed(() => {
+  const merged = new Map<string, Task>()
+  for (const task of [...monthTasks.value, ...undatedTasks.value]) merged.set(task.id, task)
+  return [...merged.values()]
+})
+
+const deleting = ref<Task | null>(null)
+const deletingBusy = ref(false)
+
+async function confirmDelete(): Promise<void> {
+  const task = deleting.value
+  if (!task) return
+  deletingBusy.value = true
+  try {
+    await tasksStore.remove(task)
+    toasts.show(t('tasks.deleted', { key: task.key }))
+  } catch {
+    toasts.show(t('tasks.deleteFailed'), 'error')
+  } finally {
+    deletingBusy.value = false
+    deleting.value = null
+  }
+}
 
 function setView(next: MainView): void {
   void router.replace({ query: { ...route.query, vista: viewToQuery(next) } })
@@ -125,7 +164,13 @@ const subtitle = computed(() => {
             <p class="m-0 text-sm text-gray-500 dark:text-gray-400">{{ subtitle }}</p>
           </div>
         </div>
-        <ViewSwitch :model-value="view" @update:model-value="setView" />
+        <div class="flex flex-wrap items-center gap-2">
+          <ViewSwitch :model-value="view" @update:model-value="setView" />
+          <BaseButton @click="newTaskOpen = true">
+            <Plus class="h-4 w-4" aria-hidden="true" />
+            {{ t('tasks.newButton') }}
+          </BaseButton>
+        </div>
       </header>
 
       <!-- Marcador provisional hasta los steps 11 (calendario) y 12 (kanban) -->
@@ -149,6 +194,30 @@ const subtitle = computed(() => {
           </template>
         </p>
       </section>
+
+      <ProvisionalTaskList :tasks="listedTasks" @delete="deleting = $event" />
     </template>
+
+    <NewTaskDialog
+      :open="newTaskOpen"
+      :project-id="defaultProjectId"
+      :start-date="todayKey()"
+      @close="newTaskOpen = false"
+      @created="newTaskOpen = false"
+    />
+    <ConfirmDialog
+      :open="deleting !== null"
+      :title="t('tasks.confirmDelete.title')"
+      :message="
+        deleting
+          ? t('tasks.confirmDelete.message', { key: deleting.key, title: deleting.title })
+          : ''
+      "
+      :confirm-label="t('tasks.confirmDelete.confirm')"
+      :cancel-label="t('common.cancel')"
+      :busy="deletingBusy"
+      @confirm="confirmDelete"
+      @cancel="deleting = null"
+    />
   </main>
 </template>
