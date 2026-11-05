@@ -1,14 +1,16 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
+import { resolveAccess, type AccessState } from '@/domain/access'
 import { safeRedirect } from '@/domain/auth'
 import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** Solo sin sesión (login, registro…): con sesión se redirige a la app. */
+    /** Solo sin sesión (login, registro…): con sesión se redirige según el estado. */
     guest?: boolean
-    /** Requiere sesión iniciada y el correo verificado. */
+    /** Requiere una cuenta activa (correo verificado y aprobada por el admin). */
     requiresAuth?: boolean
-    /** Requiere sesión, pero sirve con el correo sin verificar (pantalla de verificación). */
+    /** Pantallas de cuenta (verificar, pendiente, bloqueado): requieren sesión. */
     requiresSession?: boolean
   }
 }
@@ -48,6 +50,20 @@ export const router = createRouter({
       meta: { requiresSession: true },
     },
     {
+      path: '/pendiente',
+      name: 'pending',
+      component: () => import('@/views/account/AccountStatusView.vue'),
+      props: { kind: 'pending' },
+      meta: { requiresSession: true },
+    },
+    {
+      path: '/bloqueado',
+      name: 'blocked',
+      component: () => import('@/views/account/AccountStatusView.vue'),
+      props: { kind: 'blocked' },
+      meta: { requiresSession: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
@@ -55,27 +71,42 @@ export const router = createRouter({
   ],
 })
 
-/**
- * Guardas de sesión (step-4). En el step-5 se añaden los estados pending/active/blocked.
- * Son solo para la experiencia de uso: la seguridad real está en las reglas de Firestore.
- */
-router.beforeEach(async (to) => {
+/** Estado de acceso actual (sesión, verificación y estado del perfil). */
+export function currentAccessState(): AccessState {
   const authStore = useAuthStore()
-  await authStore.whenReady()
-
-  if (!authStore.isLoggedIn) {
-    if (to.meta.requiresAuth || to.meta.requiresSession) {
-      return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }
-    }
-    return true
+  const profileStore = useProfileStore()
+  return {
+    loggedIn: authStore.isLoggedIn,
+    mustVerifyEmail: authStore.mustVerifyEmail,
+    status: profileStore.status,
   }
+}
 
-  if (authStore.mustVerifyEmail) {
-    return to.name === 'verify-email' ? true : { name: 'verify-email' }
+/** Destino de la guarda para una ruta, o `null` si se puede entrar. */
+export function guardTarget(to: RouteLocationNormalized) {
+  const target = resolveAccess(currentAccessState(), {
+    name: typeof to.name === 'string' ? to.name : null,
+    guest: to.meta.guest,
+    requiresAuth: to.meta.requiresAuth,
+    requiresSession: to.meta.requiresSession,
+  })
+  if (!target) return null
+  if (target === 'login') {
+    return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }
   }
-
-  if (to.meta.guest || to.name === 'verify-email') {
+  // Al entrar en la app desde el login, se vuelve a la ruta pedida si es interna.
+  if (target === 'home' && to.meta.guest) {
     return safeRedirect(to.query.redirect) ?? { name: 'home' }
   }
-  return true
+  return { name: target }
+}
+
+/**
+ * Guardas por sesión y estado (steps 4 y 5). Solo afectan a la experiencia de uso:
+ * la seguridad real está en las reglas de Firestore.
+ */
+router.beforeEach(async (to) => {
+  await useAuthStore().whenReady()
+  await useProfileStore().whenLoaded()
+  return guardTarget(to) ?? true
 })
