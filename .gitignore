@@ -1,0 +1,22 @@
+node_modules/
+dist/
+coverage/
+*.local
+.env.*.local
+*.tsbuildinfo
+
+# Firebase
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Editor y sistema
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code (ajustes locales)
+.claude/settings.local.json
