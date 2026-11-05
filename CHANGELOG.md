@@ -21,6 +21,10 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Componentes de formulario del DS: `BaseInput`, `FormMessage` y `TextLink`.
 - Perfil `users/{uid}`: se crea al primer acceso con el correo verificado, siempre pendiente y sin admin, y se escucha en vivo.
 - Pantallas de cuenta pendiente de aprobación, bloqueada y error al cargar la cuenta (con reintento). Al aprobar o bloquear una cuenta, la app redirige sin recargar.
+- Kanban con una columna por estado y orden automático: por fecha fin o, si no tiene, de inicio, de la más próxima a la más lejana, con las atrasadas arriba en coral y las que no tienen fecha al final. En «Todos», cada tarjeta muestra su proyecto.
+- Cambiar de estado arrastrando una tarjeta a otra columna o desde su menú («Mover a…»). Al cerrar se guarda cuándo y, si no tenía fecha fin, se le pone hoy; al reabrir se borra la fecha de cierre.
+- Las columnas cerradas muestran las cerradas en los últimos 30 días, con «Ver más antiguas» (90, 365 días o todas).
+- Eliminar una tarea desde el menú de su tarjeta (sustituye a la lista provisional).
 - Calendario mensual (semanas de lunes a domingo, mes en la URL con `?mes=`, botones de mes anterior y siguiente y «Hoy»): las tareas son barras del color de su estado que ocupan sus días y cruzan semanas; se reparten en carriles y, si no caben, «+N más» abre la lista del día.
 - Arrastrar una tarea a otro día mueve inicio y fin manteniendo la duración y respetando el día por el que se cogió; el día de destino se resalta.
 - Alta rápida pulsando un día: título + Enter la crea en ese día y en el proyecto actual; «Más opciones» abre el formulario completo con el día y el título.
