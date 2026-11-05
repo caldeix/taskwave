@@ -37,14 +37,17 @@ export function sortColumn(tasks: Task[]): Task[] {
   })
 }
 
-/** Reparte las tareas en las 6 columnas, ya ordenadas. */
-export function groupByStatus(tasks: Task[]): Record<TaskStatus, Task[]> {
+/** Reparte las tareas en las 6 columnas, ordenadas con `sorter` (por defecto, el orden de D-35). */
+export function groupByStatus(
+  tasks: Task[],
+  sorter: (tasks: Task[]) => Task[] = sortColumn,
+): Record<TaskStatus, Task[]> {
   const columns = Object.fromEntries(TASK_STATUSES.map((s) => [s, [] as Task[]])) as Record<
     TaskStatus,
     Task[]
   >
   for (const task of tasks) columns[task.status].push(task)
-  for (const status of TASK_STATUSES) columns[status] = sortColumn(columns[status])
+  for (const status of TASK_STATUSES) columns[status] = sorter(columns[status])
   return columns
 }
 

@@ -18,6 +18,10 @@ const props = defineProps<{
   today: DayKey
   projectOf: (task: Task) => Project | undefined
   closedWindow: ClosedWindow
+  /** Orden de las columnas (filtro de orden, step-13). */
+  sorter: (tasks: Task[]) => Task[]
+  /** Estados ocultos con el ojo (step-13). */
+  hiddenStatuses: TaskStatus[]
 }>()
 const emit = defineEmits<{
   move: [task: Task, status: TaskStatus]
@@ -27,14 +31,17 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const columns = computed(() => groupByStatus(props.tasks))
+const columns = computed(() => groupByStatus(props.tasks, props.sorter))
+const visibleStatuses = computed(() =>
+  TASK_STATUSES.filter((s) => !props.hiddenStatuses.includes(s)),
+)
 </script>
 
 <template>
   <div class="-mx-4 overflow-x-auto px-4 pb-2 md:-mx-8 md:px-8">
     <div class="flex min-w-max items-start gap-4">
       <KanbanColumn
-        v-for="status in TASK_STATUSES"
+        v-for="status in visibleStatuses"
         :key="status"
         :status="status"
         :tasks="columns[status]"
