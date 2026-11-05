@@ -31,7 +31,10 @@ const dates = computed(() => {
   const { startDate, endDate } = props.task
   if (!startDate) return null
   const from = shortDate.value.format(fromDayKey(startDate))
-  return endDate ? `${from} → ${shortDate.value.format(fromDayKey(endDate))}` : from
+  // Un fin igual al inicio es una tarea de un día: solo se muestra una fecha.
+  return endDate && endDate !== startDate
+    ? `${from} → ${shortDate.value.format(fromDayKey(endDate))}`
+    : from
 })
 
 const menu = computed<MenuItem[]>(() => [

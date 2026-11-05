@@ -21,7 +21,9 @@ const closed = computed(() => isClosedStatus(task.value.status))
 const label = computed(
   () =>
     `${task.value.key} ${task.value.title} · ${t(`status.${task.value.status}`)}` +
-    (task.value.endDate ? ` · ${task.value.startDate} → ${task.value.endDate}` : ''),
+    (task.value.endDate && task.value.endDate !== task.value.startDate
+      ? ` · ${task.value.startDate} → ${task.value.endDate}`
+      : ''),
 )
 
 /** Día de la barra por el que se coge, según la posición del ratón. */
