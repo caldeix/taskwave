@@ -9,16 +9,18 @@ Vue 3 · TypeScript · Vite · Tailwind CSS 4 (con los tokens del DS Personal) �
 
 ## Comandos
 
-| Comando             | Qué hace                                                     |
-| ------------------- | ------------------------------------------------------------ |
-| `npm run dev`       | Servidor de desarrollo en `http://localhost:5173/taskwave/`  |
-| `npm run emulators` | Arranca los emuladores de Auth y Firestore (`demo-taskwave`) |
-| `npm run seed`      | Vacía los emuladores y carga los datos de prueba             |
-| `npm run dev:emu`   | Servidor de desarrollo conectado a los emuladores            |
-| `npm run build`     | Comprueba los tipos y genera `dist/`                         |
-| `npm run test`      | Tests unitarios (Vitest)                                     |
-| `npm run lint`      | ESLint                                                       |
-| `npm run format`    | Prettier                                                     |
+| Comando                      | Qué hace                                                      |
+| ---------------------------- | ------------------------------------------------------------- |
+| `npm run dev`                | Servidor de desarrollo en `http://localhost:5173/taskwave/`   |
+| `npm run emulators`          | Arranca los emuladores de Auth y Firestore (`demo-taskwave`)  |
+| `npm run seed`               | Vacía los emuladores y carga los datos de prueba              |
+| `npm run dev:emu`            | Servidor de desarrollo conectado a los emuladores             |
+| `npm run build`              | Comprueba los tipos y genera `dist/`                          |
+| `npm run test`               | Tests unitarios (Vitest)                                      |
+| `npm run test:rules`         | Tests de las reglas de Firestore (arranca su propio emulador) |
+| `npm run test:rules:running` | Lo mismo, usando los emuladores ya arrancados                 |
+| `npm run lint`               | ESLint                                                        |
+| `npm run format`             | Prettier                                                      |
 
 ## Firebase
 
