@@ -20,6 +20,8 @@ export interface NewTaskInput {
   /** Por defecto, Pendiente (D-15). */
   status?: TaskStatus
   estimateMin?: number | null
+  /** Tarea padre, para crear una subtarea (step-16, un solo nivel). */
+  parentId?: string | null
 }
 
 export type NewTaskErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
@@ -65,7 +67,7 @@ export function buildNewTask(input: NewTaskInput, key: string, serverNow: unknow
     lastWorkedAt: null,
     tagIds: [],
     links: [],
-    parentId: null,
+    parentId: input.parentId ?? null,
     weblinks: [],
     resolvedAt: null,
     createdAt: serverNow,

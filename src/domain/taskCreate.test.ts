@@ -65,6 +65,11 @@ describe('buildNewTask', () => {
       updatedAt: now,
     })
     expect(Object.keys(task)).toHaveLength(18)
+    expect(task.parentId).toBeNull()
+  })
+
+  it('una subtarea nace con su padre (step-16)', () => {
+    expect(buildNewTask({ ...base, parentId: 'padre' }, 'EST-2', now).parentId).toBe('padre')
   })
 
   it('una fecha fin igual al inicio se guarda como tarea de un día', () => {
