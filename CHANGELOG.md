@@ -21,6 +21,10 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Componentes de formulario del DS: `BaseInput`, `FormMessage` y `TextLink`.
 - Perfil `users/{uid}`: se crea al primer acceso con el correo verificado, siempre pendiente y sin admin, y se escucha en vivo.
 - Pantallas de cuenta pendiente de aprobación, bloqueada y error al cargar la cuenta (con reintento). Al aprobar o bloquear una cuenta, la app redirige sin recargar.
+- Calendario mensual (semanas de lunes a domingo, mes en la URL con `?mes=`, botones de mes anterior y siguiente y «Hoy»): las tareas son barras del color de su estado que ocupan sus días y cruzan semanas; se reparten en carriles y, si no caben, «+N más» abre la lista del día.
+- Arrastrar una tarea a otro día mueve inicio y fin manteniendo la duración y respetando el día por el que se cogió; el día de destino se resalta.
+- Alta rápida pulsando un día: título + Enter la crea en ese día y en el proyecto actual; «Más opciones» abre el formulario completo con el día y el título.
+- Panel «Sin fecha» junto al calendario, desde el que se arrastran tareas a un día.
 - Alta de tareas: título, proyecto o bandeja, fechas opcionales y prioridad. Nacen Pendientes con su clave (`EST-12`, o `INB-3` sin proyecto), sacada del contador en una transacción para que dos altas a la vez no repitan clave.
 - Borrado definitivo de tareas, con confirmación y en cascada: comentarios, actividad y registro de horas; sus vínculos desaparecen de las otras tareas, sus subtareas quedan sueltas y, si el cronómetro estaba en ella, se para.
 - Componentes `BaseSelect`, campo de fecha en `BaseInput` y `PriorityIcon` (alta coral, media mostaza, baja azul).
