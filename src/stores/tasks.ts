@@ -1,12 +1,21 @@
 import { defineStore } from 'pinia'
-import { createTask, deleteTask, updateTaskDates, type DeleteSummary } from '@/data/taskWrites'
+import {
+  createTask,
+  deleteTask,
+  updateTaskDates,
+  updateTaskStatus,
+  type DeleteSummary,
+} from '@/data/taskWrites'
+import { todayKey } from '@/domain/dates'
+import { statusChangePatch } from '@/domain/kanban'
+import type { TaskStatus } from '@/domain/status'
 import type { Task } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from './auth'
 
 /**
- * Acciones sobre tareas del usuario con sesión (steps 10 y 11). Las lecturas van por
+ * Acciones sobre tareas del usuario con sesión (steps 10 a 12). Las lecturas van por
  * `useLiveTasks`; aquí solo están las escrituras, con el uid ya resuelto.
  */
 export const useTasksStore = defineStore('tasks', () => {
@@ -34,5 +43,11 @@ export const useTasksStore = defineStore('tasks', () => {
     return updateTaskDates(db, requireUid(), task.id, dates)
   }
 
-  return { create, remove, setDates }
+  /** Cambia el estado con los automatismos de D-17 (no hace nada si no cambia). */
+  async function setStatus(task: Task, status: TaskStatus): Promise<void> {
+    if (task.status === status) return
+    await updateTaskStatus(db, requireUid(), task.id, statusChangePatch(task, status, todayKey()))
+  }
+
+  return { create, remove, setDates, setStatus }
 })

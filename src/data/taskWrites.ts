@@ -13,6 +13,7 @@ import {
   type Firestore,
 } from 'firebase/firestore'
 import { buildNewTask, removeLinksTo, taskKey, type NewTaskInput } from '@/domain/taskCreate'
+import type { StatusPatch } from '@/domain/kanban'
 import type { Task, TaskLink } from '@/domain/task'
 import { tasksCollection } from './taskQueries'
 
@@ -65,6 +66,24 @@ export async function updateTaskDates(
     endDate: dates.endDate,
     updatedAt: serverTimestamp(),
   })
+}
+
+/**
+ * Cambia el estado de una tarea con sus automatismos (kanban, step-12, D-17): la hora de cierre
+ * la pone el servidor y las fechas se ajustan según `statusChangePatch`.
+ */
+export async function updateTaskStatus(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  patch: StatusPatch,
+): Promise<void> {
+  const data: Record<string, unknown> = { status: patch.status, updatedAt: serverTimestamp() }
+  if (patch.resolvedAt === 'now') data.resolvedAt = serverTimestamp()
+  else if (patch.resolvedAt === null) data.resolvedAt = null
+  if (patch.startDate !== undefined) data.startDate = patch.startDate
+  if (patch.endDate !== undefined) data.endDate = patch.endDate
+  await updateDoc(doc(tasksCollection(db, uid), taskId), data)
 }
 
 export interface DeleteSummary {
