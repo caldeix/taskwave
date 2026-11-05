@@ -22,6 +22,8 @@ const props = defineProps<{
   /** Proyecto preseleccionado (`null` = sin proyecto). */
   projectId: string | null
   startDate: string | null
+  /** Título ya escrito (p. ej. desde el alta rápida del calendario). */
+  title?: string
 }>()
 const emit = defineEmits<{ close: []; created: [id: string] }>()
 
@@ -47,7 +49,7 @@ watch(
   (open) => {
     if (!open) return
     Object.assign(form, {
-      title: '',
+      title: props.title ?? '',
       projectId: props.projectId ?? NO_PROJECT,
       startDate: props.startDate ?? '',
       endDate: '',
