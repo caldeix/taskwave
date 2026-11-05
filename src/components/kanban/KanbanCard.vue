@@ -1,0 +1,115 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ArrowRight, CalendarClock, Trash2 } from 'lucide-vue-next'
+import PriorityIcon from '@/components/tasks/PriorityIcon.vue'
+import DropdownMenu, { type MenuItem } from '@/components/ui/DropdownMenu.vue'
+import { fromDayKey, type DayKey } from '@/domain/dates'
+import { isOverdue } from '@/domain/kanban'
+import { PROJECT_COLOR_CLASSES, type Project } from '@/domain/projects'
+import { TASK_STATUSES, isClosedStatus, type TaskStatus } from '@/domain/status'
+import type { Task } from '@/domain/task'
+import { useTaskDrag } from '@/composables/useTaskDrag'
+
+/**
+ * Tarjeta del kanban (step-12): clave, título, prioridad, proyecto (en «Todos») y fechas,
+ * con las atrasadas en coral (D-35). Se arrastra a otra columna o se mueve desde su menú.
+ */
+const props = defineProps<{ task: Task; today: DayKey; project?: Project }>()
+const emit = defineEmits<{ open: []; move: [status: TaskStatus]; delete: [] }>()
+
+const { t, locale } = useI18n()
+const { start, end } = useTaskDrag()
+
+const overdue = computed(() => isOverdue(props.task, props.today))
+const closed = computed(() => isClosedStatus(props.task.status))
+
+const shortDate = computed(
+  () => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short' }),
+)
+const dates = computed(() => {
+  const { startDate, endDate } = props.task
+  if (!startDate) return null
+  const from = shortDate.value.format(fromDayKey(startDate))
+  return endDate ? `${from} → ${shortDate.value.format(fromDayKey(endDate))}` : from
+})
+
+const menu = computed<MenuItem[]>(() => [
+  ...TASK_STATUSES.filter((s) => s !== props.task.status).map((s) => ({
+    key: `move:${s}`,
+    label: t('kanban.moveTo', { status: t(`status.${s}`) }),
+    icon: ArrowRight,
+  })),
+  { key: 'delete', label: t('common.delete'), icon: Trash2, danger: true },
+])
+
+function onMenu(key: string): void {
+  if (key === 'delete') emit('delete')
+  else emit('move', key.slice(5) as TaskStatus)
+}
+</script>
+
+<template>
+  <article
+    draggable="true"
+    :class="[
+      'group flex cursor-grab flex-col gap-2 rounded-lg border bg-white p-3 shadow-sm transition hover:shadow-md active:cursor-grabbing dark:bg-gray-900',
+      overdue ? 'border-coral-500' : 'border-gray-200 dark:border-gray-700',
+      closed ? 'opacity-75' : '',
+    ]"
+    @dragstart="start($event, task, null)"
+    @dragend="end"
+  >
+    <div class="flex items-start gap-2">
+      <button
+        type="button"
+        class="min-w-0 flex-1 cursor-pointer border-0 bg-transparent p-0 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+        @click="emit('open')"
+      >
+        <span class="block font-text text-xs font-bold text-gray-500 dark:text-gray-400">{{
+          task.key
+        }}</span>
+        <span
+          :class="[
+            'block font-text text-sm leading-snug font-medium break-words text-gray-800 dark:text-white',
+            task.status === 'discarded' ? 'line-through' : '',
+          ]"
+        >
+          {{ task.title }}
+        </span>
+      </button>
+      <DropdownMenu
+        :label="t('kanban.cardActions', { key: task.key })"
+        :items="menu"
+        @select="onMenu"
+      />
+    </div>
+
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <PriorityIcon :priority="task.priority" />
+      <span
+        v-if="project"
+        class="inline-flex min-w-0 items-center gap-1 font-text text-xs text-gray-500 dark:text-gray-400"
+      >
+        <span
+          :class="['h-2 w-2 shrink-0 rounded-full', PROJECT_COLOR_CLASSES[project.color].dot]"
+          aria-hidden="true"
+        />
+        <span class="truncate">{{ project.name }}</span>
+      </span>
+      <span
+        v-if="dates"
+        :class="[
+          'inline-flex items-center gap-1 font-text text-xs',
+          overdue
+            ? 'font-bold text-coral-700 dark:text-coral-500'
+            : 'text-gray-500 dark:text-gray-400',
+        ]"
+      >
+        <CalendarClock class="h-3.5 w-3.5" aria-hidden="true" />
+        {{ dates }}
+        <span v-if="overdue" class="sr-only">{{ t('kanban.overdue') }}</span>
+      </span>
+    </div>
+  </article>
+</template>
