@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeft, PanelRightClose, PanelRightOpen, Trash2 } from 'lucide-vue-next'
+import TaskDescription from '@/components/task/TaskDescription.vue'
 import TaskDetailsPanel from '@/components/task/TaskDetailsPanel.vue'
 import TaskTitle from '@/components/task/TaskTitle.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
@@ -19,8 +20,9 @@ import { useToastsStore } from '@/stores/toasts'
 
 /**
  * Vista de una tarea (step-14, D-23): sustituye al calendario o al kanban, tiene su URL
- * (`/t/EST-12`) y el panel de datos a la derecha, plegable. La descripción en markdown, los
- * vínculos, los comentarios, el registro de horas y la actividad llegan en los steps 15 a 22.
+ * (`/t/EST-12`) y el panel de datos a la derecha, plegable. La descripción es markdown
+ * (step-15); los vínculos, los comentarios, el registro de horas y la actividad llegan en los
+ * steps 16 a 22.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -182,23 +184,7 @@ const iconButton =
       <article class="flex min-w-0 flex-col gap-6">
         <TaskTitle :title="shown.title" :disabled="savingTitle" @save="saveTitle" />
 
-        <section class="flex flex-col gap-2">
-          <h2 class="m-0 font-text text-sm font-bold text-gray-800 dark:text-white">
-            {{ t('taskView.description') }}
-          </h2>
-          <p
-            v-if="shown.description"
-            class="m-0 font-text text-sm leading-relaxed whitespace-pre-wrap text-gray-800 dark:text-white"
-          >
-            {{ shown.description }}
-          </p>
-          <p v-else class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
-            {{ t('taskView.noDescription') }}
-          </p>
-          <p class="m-0 font-text text-xs text-gray-500 dark:text-gray-400">
-            {{ t('taskView.descriptionSoon') }}
-          </p>
-        </section>
+        <TaskDescription :task="shown" />
 
         <section class="flex flex-col gap-2">
           <h2 class="m-0 font-text text-sm font-bold text-gray-800 dark:text-white">

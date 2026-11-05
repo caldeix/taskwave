@@ -93,8 +93,16 @@ const es = {
     titleLabel: 'Título de la tarea',
     editTitle: 'Pulsa para editar el título',
     description: 'Descripción',
-    noDescription: 'Sin descripción.',
-    descriptionSoon: 'La edición en markdown llega en el step-15.',
+    noDescription: 'Sin descripción. Pulsa para añadirla.',
+    editDescription: 'Editar la descripción',
+    descriptionLabel: 'Descripción de la tarea (markdown)',
+    descriptionPlaceholder: 'Qué hay que hacer, enlaces, una lista de casillas con - [ ] …',
+    discardDescription: {
+      title: 'Descartar los cambios',
+      message: 'La descripción tiene cambios sin guardar. Si la cierras, se pierden.',
+      confirm: 'Descartar',
+      cancel: 'Seguir editando',
+    },
     linkedTasks: 'Tareas vinculadas',
     linksSoon: 'Los vínculos y las subtareas llegan en el step-16.',
     tabs: {
