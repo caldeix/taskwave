@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft, Mail, Search, ShieldCheck } from 'lucide-vue-next'
+import { Mail, Search, ShieldCheck } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import FormMessage from '@/components/ui/FormMessage.vue'
-import TextLink from '@/components/ui/TextLink.vue'
-import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 import UserStatusBadge from '@/components/ui/UserStatusBadge.vue'
 import {
   availableActions,
@@ -73,17 +71,10 @@ function providerLabel(provider: string): string {
 </script>
 
 <template>
-  <main class="container mx-auto flex flex-col gap-6 px-4 py-8">
-    <header class="flex flex-col gap-3">
-      <div class="flex items-center justify-between gap-4">
-        <TextLink :to="{ name: 'home' }" class="inline-flex items-center gap-1">
-          <ArrowLeft class="h-4 w-4" aria-hidden="true" />
-          {{ t('admin.users.back') }}
-        </TextLink>
-        <ThemeToggle />
-      </div>
+  <main class="flex flex-col gap-6 px-4 py-6 md:px-8">
+    <header class="flex flex-col gap-1">
       <h1
-        class="m-0 w-fit bg-radial-blue bg-clip-text font-title text-5xl leading-tight font-semibold text-transparent"
+        class="m-0 w-fit bg-radial-blue bg-clip-text font-title text-4xl leading-tight font-semibold text-transparent"
       >
         {{ t('admin.users.title') }}
       </h1>
