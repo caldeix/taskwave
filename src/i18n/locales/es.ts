@@ -67,6 +67,47 @@ const es = {
     projectSubtitle: 'Clave {key}: sus tareas se numeran {key}-1, {key}-2…',
     projectNotFound: 'Ese proyecto no existe o se ha borrado.',
   },
+  tasks: {
+    newButton: 'Nueva tarea',
+    created: 'Tarea {key} creada.',
+    deleted: 'Tarea {key} eliminada.',
+    deleteFailed: 'No se pudo eliminar la tarea. Vuelve a intentarlo.',
+    noDate: 'Sin fecha',
+    deleteLabel: 'Eliminar {key}',
+    provisionalList: 'Tareas de este mes y sin fecha (lista provisional hasta el calendario)',
+    emptyList: 'No hay tareas en este mes ni sin fecha.',
+    fields: {
+      title: 'Título',
+      project: 'Proyecto',
+      startDate: 'Fecha de inicio',
+      endDate: 'Fecha fin',
+      priority: 'Prioridad',
+    },
+    priority: {
+      high: 'Prioridad alta',
+      medium: 'Prioridad media',
+      low: 'Prioridad baja',
+    },
+    new: {
+      title: 'Nueva tarea',
+      submit: 'Crear tarea',
+      dateOptional: 'Opcional: sin fecha no sale en el calendario.',
+      failed: 'No se pudo crear la tarea. Comprueba la conexión y vuelve a intentarlo.',
+    },
+    confirmDelete: {
+      title: '¿Eliminar la tarea?',
+      message:
+        'Se eliminará {key} «{title}» con sus comentarios, su actividad y su registro de horas. Sus vínculos desaparecerán de las otras tareas y sus subtareas quedarán sueltas. No se puede deshacer.',
+      confirm: 'Eliminar',
+    },
+    validation: {
+      titleRequired: 'Escribe un título.',
+      titleTooLong: 'Máximo 200 caracteres.',
+      dateInvalid: 'Fecha no válida.',
+      endWithoutStart: 'Pon antes la fecha de inicio.',
+      endBeforeStart: 'No puede ser anterior a la fecha de inicio.',
+    },
+  },
   projects: {
     actions: {
       edit: 'Editar',
