@@ -11,7 +11,7 @@ import {
   where,
   type Firestore,
 } from 'firebase/firestore'
-import { createTask, deleteTask, updateTaskDates } from '@/data/taskWrites'
+import { createTask, deleteTask, updateTaskDates, updateTaskStatus } from '@/data/taskWrites'
 import { taskFromData } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import {
@@ -120,6 +120,37 @@ describe('updateTaskDates (arrastrar en el calendario, D-21)', () => {
     ).rejects.toThrow()
     await expect(
       updateTaskDates(as(env, U.other), U.active, id, { startDate: '2026-12-01', endDate: null }),
+    ).rejects.toThrow()
+  })
+})
+
+describe('updateTaskStatus (kanban, D-17)', () => {
+  it('al cerrar guarda la hora del servidor y la fecha fin; al reabrir la borra', async () => {
+    const db = as(env, U.active)
+    const { id } = await createTask(db, U.active, input({ startDate: '2026-11-01' }))
+    const read = async () =>
+      (await readAsAdmin((a) => getDoc(doc(a, 'users', U.active, 'tasks', id)))).data()!
+
+    await updateTaskStatus(db, U.active, id, {
+      status: 'done',
+      resolvedAt: 'now',
+      endDate: '2026-11-05',
+    })
+    const closed = await read()
+    expect(closed.status).toBe('done')
+    expect(closed.resolvedAt).toBeInstanceOf(Timestamp)
+    expect(closed.endDate).toBe('2026-11-05')
+
+    await updateTaskStatus(db, U.active, id, { status: 'in_progress', resolvedAt: null })
+    const reopened = await read()
+    expect(reopened).toMatchObject({ status: 'in_progress', resolvedAt: null })
+  })
+
+  it('las reglas rechazan estados inventados', async () => {
+    const db = as(env, U.active)
+    const { id } = await createTask(db, U.active, input())
+    await expect(
+      updateTaskStatus(db, U.active, id, { status: 'archivada' as never }),
     ).rejects.toThrow()
   })
 })
