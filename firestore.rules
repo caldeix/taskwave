@@ -1,13 +1,15 @@
 rules_version = '2';
 
-// Reglas de TaskWave.
-// step-5: perfil `users/{uid}` (alta pendiente, lectura propia, aprobación por el admin).
-// step-6: subcolecciones de cada usuario (proyectos, tareas…), validaciones y tests de reglas.
-// Todo lo que no se permite aquí está denegado.
+// Reglas de TaskWave (steps 5 y 6 del plan TASKWAVE-01).
+// - Cada usuario solo accede a lo suyo (`users/{uid}/...`), y solo si su cuenta está activa
+//   y su correo verificado.
+// - El admin lista perfiles y cambia el estado de otros, pero no ve sus datos (D-7).
+// - Cada documento se valida entero (campos permitidos, tipos y tamaños) al crear y al editar.
+// Todo lo que no se permite aquí está denegado. Tests: tests/rules (npm run test:rules).
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ---------------------------------------------------------------- utilidades
+    // ================================================================ utilidades
 
     function signedIn() {
       return request.auth != null;
@@ -18,7 +20,7 @@ service cloud.firestore {
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid;
     }
-    // Lee el perfil de quien hace la petición (≈1 lectura extra por petición, D-2).
+    // Perfil de quien hace la petición (≈1 lectura extra por petición, D-2).
     function myProfile() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
@@ -28,27 +30,91 @@ service cloud.firestore {
     function isAdmin() {
       return isActive() && myProfile().admin == true;
     }
+    // Dueño de los datos con la cuenta activa: único que lee y escribe sus subcolecciones.
+    function isActiveOwner(uid) {
+      return isOwner(uid) && isActive();
+    }
     function changedKeys() {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
-    function isStringUpTo(value, max) {
-      return value is string && value.size() <= max;
+
+    // ---------------------------------------------------------------- tipos
+
+    function isStr(v, min, max) {
+      return v is string && v.size() >= min && v.size() <= max;
+    }
+    function isOptStr(v, max) {
+      return v == null || isStr(v, 0, max);
+    }
+    function isIntIn(v, min, max) {
+      return v is int && v >= min && v <= max;
+    }
+    function isOptTimestamp(v) {
+      return v == null || v is timestamp;
+    }
+    // Fecha de día `AAAA-MM-DD` (sin hora, para que no cambie de día por la zona horaria).
+    function isDay(v) {
+      return v is string && v.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$');
+    }
+    function isOptDay(v) {
+      return v == null || isDay(v);
+    }
+    function isColor(v) {
+      return v in ['blue', 'emerald', 'mustard', 'coral', 'violet', 'gray'];
+    }
+    function isList(v, max) {
+      return v is list && v.size() <= max;
+    }
+    // Documento con exactamente estos campos.
+    function hasExactly(data, keys) {
+      return data.keys().hasOnly(keys) && data.keys().hasAll(keys);
+    }
+    // Marcas de tiempo del servidor: `createdAt` al crear (y luego fija), `updatedAt` en cada escritura.
+    function stampsOnCreate(data) {
+      return data.createdAt == request.time && data.updatedAt == request.time;
+    }
+    function stampsOnUpdate(data) {
+      return data.createdAt == resource.data.createdAt && data.updatedAt == request.time;
     }
 
-    // ---------------------------------------------------------------- perfil
+    // ================================================================ perfil (step-5)
 
     function profileKeys() {
       return ['email', 'displayName', 'photoURL', 'provider', 'status', 'admin', 'createdAt',
               'approvedAt', 'approvedBy', 'inboxCounter', 'prefs', 'activeTimer'];
     }
 
+    function isValidPrefs(p) {
+      return p is map
+        && p.keys().hasOnly(['theme', 'view', 'sidebarCollapsed', 'hoursPerDay', 'timerWarnHours', 'filters'])
+        && (!('theme' in p) || p.theme in ['light', 'dark', 'system'])
+        && (!('view' in p) || p.view in ['calendar', 'kanban'])
+        && (!('sidebarCollapsed' in p) || p.sidebarCollapsed is bool)
+        && (!('hoursPerDay' in p) || isIntIn(p.hoursPerDay, 1, 24))
+        && (!('timerWarnHours' in p) || isIntIn(p.timerWarnHours, 1, 24))
+        && (!('filters' in p) || p.filters == null || p.filters is map);
+    }
+
+    function isValidTimer(t) {
+      return t == null
+        || (t is map && hasExactly(t, ['taskId', 'startedAt']) && isStr(t.taskId, 1, 128)
+            && t.startedAt is timestamp);
+    }
+
+    // Campos que el propio usuario puede tener en su perfil (comunes a alta y edición).
+    function isValidProfileBody(data) {
+      return hasExactly(data, profileKeys())
+        && isStr(data.displayName, 0, 100)
+        && isOptStr(data.photoURL, 2048)
+        && isIntIn(data.inboxCounter, 0, 1000000)
+        && isValidPrefs(data.prefs)
+        && isValidTimer(data.activeTimer);
+    }
+
     // Perfil inicial: siempre pendiente, sin admin y con el correo de la sesión.
     function isValidNewProfile(data) {
-      return data.keys().hasOnly(profileKeys())
-        && data.keys().hasAll(profileKeys())
+      return isValidProfileBody(data)
         && data.email == request.auth.token.email
-        && isStringUpTo(data.displayName, 100)
-        && (data.photoURL == null || isStringUpTo(data.photoURL, 2048))
         && data.provider in ['password', 'google.com']
         && data.status == 'pending'
         && data.admin == false
@@ -56,7 +122,6 @@ service cloud.firestore {
         && data.approvedAt == null
         && data.approvedBy == null
         && data.inboxCounter == 0
-        && data.prefs is map
         && data.activeTimer == null;
     }
 
@@ -71,18 +136,139 @@ service cloud.firestore {
       // El usuario activo edita sus datos, pero nunca su estado, su admin ni su alta.
       // El admin solo cambia el estado de otros (nunca el suyo ni el flag admin).
       allow update: if (
-          isOwner(uid) && isActive()
+          isActiveOwner(uid)
           && !changedKeys().hasAny(['email', 'provider', 'status', 'admin', 'createdAt',
                                     'approvedAt', 'approvedBy'])
-          && request.resource.data.keys().hasOnly(profileKeys())
+          && isValidProfileBody(request.resource.data)
         ) || (
           isAdmin() && uid != request.auth.uid
           && changedKeys().hasOnly(['status', 'approvedAt', 'approvedBy'])
           && request.resource.data.status in ['pending', 'active', 'blocked']
+          && isOptTimestamp(request.resource.data.approvedAt)
+          && (request.resource.data.approvedBy == null
+              || request.resource.data.approvedBy == request.auth.uid)
         );
 
       // Baja propia (P-9). Un usuario bloqueado no puede borrarse para volver a darse de alta.
       allow delete: if isOwner(uid) && resource.data.status != 'blocked';
+
+      // ============================================================== datos del usuario (step-6)
+      // Solo el dueño con la cuenta activa. El admin no tiene acceso (D-7).
+
+      // ---------------------------------------------------------- proyectos
+      function isValidProject(data) {
+        return hasExactly(data, ['name', 'key', 'color', 'icon', 'order', 'archived',
+                                 'taskCounter', 'createdAt'])
+          && isStr(data.name, 1, 60)
+          && data.key is string && data.key.matches('^[A-Z][A-Z0-9]{1,5}$')
+          && isColor(data.color)
+          && isStr(data.icon, 0, 40)
+          && isIntIn(data.order, 0, 10000)
+          && data.archived is bool
+          && isIntIn(data.taskCounter, 0, 1000000)
+          && data.createdAt is timestamp;
+      }
+      match /projects/{projectId} {
+        allow read, delete: if isActiveOwner(uid);
+        allow create: if isActiveOwner(uid) && isValidProject(request.resource.data)
+          && request.resource.data.createdAt == request.time;
+        allow update: if isActiveOwner(uid) && isValidProject(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+      }
+
+      // ---------------------------------------------------------- tareas
+      function isValidTask(data) {
+        return hasExactly(data, ['key', 'projectId', 'title', 'description', 'status', 'priority',
+                                 'startDate', 'endDate', 'estimateMin', 'spentMin', 'lastWorkedAt',
+                                 'tagIds', 'links', 'parentId', 'weblinks', 'resolvedAt',
+                                 'createdAt', 'updatedAt'])
+          && data.key is string && data.key.matches('^[A-Z][A-Z0-9]{1,5}-[0-9]{1,7}$')
+          && isOptStr(data.projectId, 128)
+          && isStr(data.title, 1, 200)
+          && isStr(data.description, 0, 50000)
+          && data.status in ['pending', 'in_progress', 'paused', 'done', 'discarded', 'ko']
+          && data.priority in ['high', 'medium', 'low']
+          && isOptDay(data.startDate)
+          && isOptDay(data.endDate)
+          // La fecha fin no puede ser anterior al inicio (las fechas AAAA-MM-DD se comparan como texto).
+          && (data.startDate == null || data.endDate == null || data.endDate >= data.startDate)
+          && (data.estimateMin == null || isIntIn(data.estimateMin, 0, 1000000))
+          && isIntIn(data.spentMin, 0, 100000000)
+          && isOptTimestamp(data.lastWorkedAt)
+          && isList(data.tagIds, 20)
+          && isList(data.links, 50)
+          && isOptStr(data.parentId, 128)
+          && isList(data.weblinks, 20)
+          && isOptTimestamp(data.resolvedAt)
+          && data.createdAt is timestamp
+          && data.updatedAt is timestamp;
+      }
+      match /tasks/{taskId} {
+        allow read, delete: if isActiveOwner(uid);
+        allow create: if isActiveOwner(uid) && isValidTask(request.resource.data)
+          && stampsOnCreate(request.resource.data);
+        allow update: if isActiveOwner(uid) && isValidTask(request.resource.data)
+          && stampsOnUpdate(request.resource.data);
+
+        // -------------------------------------------------------- comentarios
+        match /comments/{commentId} {
+          allow read, delete: if isActiveOwner(uid);
+          allow create: if isActiveOwner(uid)
+            && hasExactly(request.resource.data, ['body', 'createdAt', 'editedAt'])
+            && isStr(request.resource.data.body, 1, 10000)
+            && request.resource.data.createdAt == request.time
+            && request.resource.data.editedAt == null;
+          allow update: if isActiveOwner(uid)
+            && changedKeys().hasOnly(['body', 'editedAt'])
+            && isStr(request.resource.data.body, 1, 10000)
+            && request.resource.data.editedAt == request.time;
+        }
+
+        // -------------------------------------------------------- actividad (D-42)
+        // Historial: se crea y se borra (con la tarea), pero nunca se edita.
+        match /activity/{activityId} {
+          allow read, delete: if isActiveOwner(uid);
+          allow create: if isActiveOwner(uid)
+            && hasExactly(request.resource.data, ['field', 'from', 'to', 'at'])
+            && isStr(request.resource.data.field, 1, 40)
+            && (request.resource.data.from == null || request.resource.data.from is string
+                || request.resource.data.from is number || request.resource.data.from is bool)
+            && (request.resource.data.to == null || request.resource.data.to is string
+                || request.resource.data.to is number || request.resource.data.to is bool)
+            && (!(request.resource.data.from is string) || request.resource.data.from.size() <= 500)
+            && (!(request.resource.data.to is string) || request.resource.data.to.size() <= 500)
+            && request.resource.data.at == request.time;
+        }
+      }
+
+      // ---------------------------------------------------------- registro de horas
+      function isValidWorklog(data) {
+        return hasExactly(data, ['taskId', 'projectId', 'date', 'minutes', 'startedAt', 'endedAt',
+                                 'source', 'note'])
+          && isStr(data.taskId, 1, 128)
+          && isOptStr(data.projectId, 128)
+          && isDay(data.date)
+          // Un registro es de un solo día (D-27): como mucho 24 h.
+          && isIntIn(data.minutes, 1, 1440)
+          && data.startedAt is timestamp
+          && data.endedAt is timestamp
+          && data.endedAt >= data.startedAt
+          && data.source in ['timer', 'manual']
+          && isStr(data.note, 0, 500);
+      }
+      match /worklogs/{worklogId} {
+        allow read, delete: if isActiveOwner(uid);
+        allow create, update: if isActiveOwner(uid) && isValidWorklog(request.resource.data);
+      }
+
+      // ---------------------------------------------------------- tags
+      match /tags/{tagId} {
+        allow read, delete: if isActiveOwner(uid);
+        allow create, update: if isActiveOwner(uid)
+          && hasExactly(request.resource.data, ['name', 'color'])
+          && isStr(request.resource.data.name, 1, 40)
+          && isColor(request.resource.data.color);
+      }
     }
   }
 }
