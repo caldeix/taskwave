@@ -6,6 +6,7 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  updateDoc,
   where,
   writeBatch,
   type DocumentReference,
@@ -47,6 +48,23 @@ export async function createTask(
     return newKey
   })
   return { id: taskRef.id, key }
+}
+
+/**
+ * Cambia las fechas de una tarea (arrastrar en el calendario, step-11). Las reglas rechazan
+ * fechas mal formadas o un fin anterior al inicio.
+ */
+export async function updateTaskDates(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  dates: { startDate: string | null; endDate: string | null },
+): Promise<void> {
+  await updateDoc(doc(tasksCollection(db, uid), taskId), {
+    startDate: dates.startDate,
+    endDate: dates.endDate,
+    updatedAt: serverTimestamp(),
+  })
 }
 
 export interface DeleteSummary {

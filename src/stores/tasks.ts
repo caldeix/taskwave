@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
-import { createTask, deleteTask, type DeleteSummary } from '@/data/taskWrites'
+import { createTask, deleteTask, updateTaskDates, type DeleteSummary } from '@/data/taskWrites'
 import type { Task } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from './auth'
 
 /**
- * Acciones sobre tareas del usuario con sesión (step-10). Las lecturas van por `useLiveTasks`;
- * aquí solo están las escrituras, con el uid ya resuelto.
+ * Acciones sobre tareas del usuario con sesión (steps 10 y 11). Las lecturas van por
+ * `useLiveTasks`; aquí solo están las escrituras, con el uid ya resuelto.
  */
 export const useTasksStore = defineStore('tasks', () => {
   const authStore = useAuthStore()
@@ -26,5 +26,13 @@ export const useTasksStore = defineStore('tasks', () => {
     return deleteTask(db, requireUid(), task)
   }
 
-  return { create, remove }
+  /** Mueve una tarea de fecha. Con la caché, el calendario se actualiza al instante. */
+  function setDates(
+    task: Task,
+    dates: { startDate: string | null; endDate: string | null },
+  ): Promise<void> {
+    return updateTaskDates(db, requireUid(), task.id, dates)
+  }
+
+  return { create, remove, setDates }
 })
