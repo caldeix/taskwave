@@ -53,6 +53,11 @@ export function rangeQueries(
   ]
 }
 
+/** Una tarea por su clave (`EST-12`), para la vista de tarea (step-14). */
+export function taskByKeyQuery(db: Firestore, uid: string, key: string): Query {
+  return query(tasksCollection(db, uid), where('key', '==', key), limit(1))
+}
+
 /** Tareas sin fecha de inicio (panel «Sin fecha», D-19). */
 export function undatedQuery(db: Firestore, uid: string, scope: TaskScope): Query {
   return query(tasksCollection(db, uid), ...scopeConstraints(scope), where('startDate', '==', null))

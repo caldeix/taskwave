@@ -2,9 +2,12 @@ import { defineStore } from 'pinia'
 import {
   createTask,
   deleteTask,
+  moveTaskToProject,
   updateTaskDates,
+  updateTaskFields,
   updateTaskStatus,
   type DeleteSummary,
+  type EditableTaskFields,
 } from '@/data/taskWrites'
 import { todayKey } from '@/domain/dates'
 import { statusChangePatch } from '@/domain/kanban'
@@ -49,5 +52,15 @@ export const useTasksStore = defineStore('tasks', () => {
     await updateTaskStatus(db, requireUid(), task.id, statusChangePatch(task, status, todayKey()))
   }
 
-  return { create, remove, setDates, setStatus }
+  /** Autoguardado de campos sueltos desde la vista de tarea (D-46). */
+  function updateFields(task: Task, fields: EditableTaskFields): Promise<void> {
+    return updateTaskFields(db, requireUid(), task.id, fields)
+  }
+
+  /** Mueve la tarea a otro proyecto (o a la bandeja); devuelve su nueva clave (D-12). */
+  function moveToProject(task: Task, projectId: string | null): Promise<string | null> {
+    return moveTaskToProject(db, requireUid(), task, projectId)
+  }
+
+  return { create, remove, setDates, setStatus, updateFields, moveToProject }
 })

@@ -86,6 +86,71 @@ export async function updateTaskStatus(
   await updateDoc(doc(tasksCollection(db, uid), taskId), data)
 }
 
+/** Campos que se editan directamente desde la vista de tarea (step-14). */
+export type EditableTaskFields = Partial<{
+  title: string
+  description: string
+  priority: string
+  estimateMin: number | null
+  weblinks: { url: string; title: string }[]
+}>
+
+/** Guarda cambios de campos sueltos con `updatedAt` del servidor (autoguardado, D-46). */
+export async function updateTaskFields(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  fields: EditableTaskFields,
+): Promise<void> {
+  await updateDoc(doc(tasksCollection(db, uid), taskId), {
+    ...fields,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/**
+ * Mueve una tarea a otro proyecto (o a la bandeja). Como en Jira, cambia su clave (D-12): la
+ * nueva sale del contador del destino en una transacción. Después se actualiza el proyecto de
+ * sus registros de horas (para las estadísticas por proyecto). Devuelve la nueva clave.
+ */
+export async function moveTaskToProject(
+  db: Firestore,
+  uid: string,
+  task: Pick<Task, 'id' | 'projectId'>,
+  targetProjectId: string | null,
+): Promise<string | null> {
+  if (task.projectId === targetProjectId) return null
+  const taskRef = doc(tasksCollection(db, uid), task.id)
+  const counterRef = targetProjectId
+    ? doc(db, 'users', uid, 'projects', targetProjectId)
+    : doc(db, 'users', uid)
+  const field = targetProjectId ? 'taskCounter' : 'inboxCounter'
+
+  const newKey = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(counterRef)
+    if (!snap.exists()) throw new Error('project-not-found')
+    const data = snap.data()
+    const next = Number(data[field] ?? 0) + 1
+    const key = taskKey(targetProjectId ? String(data.key) : null, next)
+    tx.update(counterRef, { [field]: next })
+    tx.update(taskRef, { projectId: targetProjectId, key, updatedAt: serverTimestamp() })
+    return key
+  })
+
+  const worklogs = await getDocs(
+    query(collection(db, 'users', uid, 'worklogs'), where('taskId', '==', task.id)),
+  )
+  await commitInBatches(
+    db,
+    worklogs.docs.map((d) => ({
+      kind: 'update' as const,
+      ref: d.ref,
+      data: { projectId: targetProjectId },
+    })),
+  )
+  return newKey
+}
+
 export interface DeleteSummary {
   comments: number
   activity: number
