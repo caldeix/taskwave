@@ -46,6 +46,11 @@ export const router = createRouter({
           props: { scope: 'project' },
         },
         {
+          path: 't/:taskKey',
+          name: 'task',
+          component: () => import('@/views/TaskView.vue'),
+        },
+        {
           path: 'admin/usuarios',
           name: 'admin-users',
           component: () => import('@/views/admin/AdminUsersView.vue'),
