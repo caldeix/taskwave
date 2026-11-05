@@ -1,0 +1,108 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { CalendarDays, Columns3, Inbox, Layers } from 'lucide-vue-next'
+import ViewSwitch from '@/components/layout/ViewSwitch.vue'
+import ProjectIcon from '@/components/projects/ProjectIcon.vue'
+import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
+import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
+import { useProfileStore } from '@/stores/profile'
+import { useProjectsStore } from '@/stores/projects'
+
+/**
+ * Vista principal (step-8): «Todos», «Sin proyecto» o un proyecto, en modo calendario o kanban.
+ * El calendario (step-11) y el kanban (step-12) sustituirán al marcador provisional.
+ */
+const props = defineProps<{ scope: 'all' | 'inbox' | 'project' }>()
+
+const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
+const profileStore = useProfileStore()
+const projectsStore = useProjectsStore()
+
+const project = computed(() =>
+  props.scope === 'project'
+    ? projectsStore.byKey(String(route.params.projectKey ?? ''))
+    : undefined,
+)
+const notFound = computed(() => props.scope === 'project' && projectsStore.loaded && !project.value)
+
+const view = computed<MainView>(() => viewFromQuery(route.query.vista, profileStore.prefs.view))
+
+function setView(next: MainView): void {
+  void router.replace({ query: { ...route.query, vista: viewToQuery(next) } })
+  void profileStore.updatePrefs({ view: next })
+}
+
+const title = computed(() => {
+  if (props.scope === 'all') return t('nav.all')
+  if (props.scope === 'inbox') return t('nav.inbox')
+  return project.value?.name ?? ''
+})
+
+const subtitle = computed(() => {
+  if (props.scope === 'all') return t('views.allSubtitle')
+  if (props.scope === 'inbox') return t('views.inboxSubtitle')
+  return project.value ? t('views.projectSubtitle', { key: project.value.key }) : ''
+})
+</script>
+
+<template>
+  <main class="flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 md:px-8">
+    <p v-if="notFound" class="m-0 font-text text-base text-gray-500 dark:text-gray-400">
+      {{ t('views.projectNotFound') }}
+    </p>
+
+    <template v-else>
+      <header class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div class="flex min-w-0 items-center gap-3">
+          <span
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800"
+          >
+            <Layers
+              v-if="scope === 'all'"
+              class="h-6 w-6 text-blue-600 dark:text-blue-400"
+              aria-hidden="true"
+            />
+            <Inbox
+              v-else-if="scope === 'inbox'"
+              class="h-6 w-6 text-gray-500 dark:text-gray-400"
+              aria-hidden="true"
+            />
+            <ProjectIcon
+              v-else-if="project"
+              :name="project.icon"
+              :class="['h-6 w-6', PROJECT_COLOR_CLASSES[project.color].text]"
+            />
+          </span>
+          <div class="flex min-w-0 flex-col">
+            <h1
+              class="m-0 w-fit max-w-full truncate bg-radial-blue bg-clip-text font-title text-4xl leading-tight font-semibold text-transparent"
+            >
+              {{ title }}
+            </h1>
+            <p class="m-0 text-sm text-gray-500 dark:text-gray-400">{{ subtitle }}</p>
+          </div>
+        </div>
+        <ViewSwitch :model-value="view" @update:model-value="setView" />
+      </header>
+
+      <!-- Marcador provisional hasta los steps 11 (calendario) y 12 (kanban) -->
+      <section
+        class="flex min-h-80 flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-gray-500 p-8 text-center dark:border-gray-400"
+      >
+        <CalendarDays
+          v-if="view === 'calendar'"
+          class="h-10 w-10 text-gray-500 dark:text-gray-400"
+          aria-hidden="true"
+        />
+        <Columns3 v-else class="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+        <p class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
+          {{ view === 'calendar' ? t('views.calendarSoon') : t('views.kanbanSoon') }}
+        </p>
+      </section>
+    </template>
+  </main>
+</template>

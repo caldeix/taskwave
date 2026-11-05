@@ -21,17 +21,42 @@ declare module 'vue-router' {
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // App con menú lateral (step-8). Las rutas hijas heredan la `meta` del padre.
     {
       path: '/',
-      name: 'home',
-      component: () => import('@/views/ShowcaseView.vue'),
+      component: () => import('@/layouts/AppLayout.vue'),
       meta: { requiresAuth: true },
-    },
-    {
-      path: '/admin/usuarios',
-      name: 'admin-users',
-      component: () => import('@/views/admin/AdminUsersView.vue'),
-      meta: { requiresAdmin: true },
+      children: [
+        {
+          path: '',
+          name: 'home',
+          component: () => import('@/views/MainView.vue'),
+          props: { scope: 'all' },
+        },
+        {
+          path: 'sin-proyecto',
+          name: 'inbox',
+          component: () => import('@/views/MainView.vue'),
+          props: { scope: 'inbox' },
+        },
+        {
+          path: 'p/:projectKey',
+          name: 'project',
+          component: () => import('@/views/MainView.vue'),
+          props: { scope: 'project' },
+        },
+        {
+          path: 'admin/usuarios',
+          name: 'admin-users',
+          component: () => import('@/views/admin/AdminUsersView.vue'),
+          meta: { requiresAdmin: true },
+        },
+        {
+          path: 'ds',
+          name: 'design-system',
+          component: () => import('@/views/ShowcaseView.vue'),
+        },
+      ],
     },
     {
       path: '/login',
