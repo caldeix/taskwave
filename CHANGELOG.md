@@ -21,6 +21,10 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Componentes de formulario del DS: `BaseInput`, `FormMessage` y `TextLink`.
 - Perfil `users/{uid}`: se crea al primer acceso con el correo verificado, siempre pendiente y sin admin, y se escucha en vivo.
 - Pantallas de cuenta pendiente de aprobación, bloqueada y error al cargar la cuenta (con reintento). Al aprobar o bloquear una cuenta, la app redirige sin recargar.
+- Capa de datos de tareas: modelo `Task`, fechas de día `AAAA-MM-DD` con `date-fns` y consultas siempre acotadas (por rango de fechas con solapamiento, sin fecha, abiertas, cerradas desde una fecha e iniciadas con límite), filtradas por todos, bandeja o proyecto. Composable `useLiveTasks` para escucharlas en vivo sin duplicados.
+- Caché persistente de Firestore (IndexedDB, varias pestañas) que se borra al cerrar sesión.
+- Índices compuestos de las consultas de tareas en `firestore.indexes.json`.
+- Tests de las consultas contra el emulador (incluidos en `npm run test:rules`).
 - Estructura de la app: menú lateral plegable (se recuerda en `prefs.sidebarCollapsed`) con «Todos», «Sin proyecto», proyectos, archivados, panel de admin con el contador, tema y cierre de sesión; en móvil, el menú es un cajón.
 - Proyectos: crear (con la clave propuesta a partir del nombre), editar nombre, color e icono (la clave no cambia), subir y bajar, archivar y desarchivar, y eliminar solo si no tiene tareas.
 - Vista principal por «Todos», «Sin proyecto» o proyecto, con el selector Calendario/Kanban en la URL (`?vista=`) y recordado en `prefs.view`. El calendario y el kanban son de momento un marcador.
