@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ExternalLink, Link2, Plus, X } from 'lucide-vue-next'
 import HoursBar from './HoursBar.vue'
+import type { SubtaskTotals } from '@/domain/links'
 import StatusSelect from './StatusSelect.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
@@ -21,7 +22,7 @@ import { useToastsStore } from '@/stores/toasts'
  * Panel derecho de la vista de tarea (step-14): estado, prioridad, proyecto, fechas, estimado,
  * horas, enlaces y fechas de alta. Cada campo se guarda solo al cambiarlo (D-46).
  */
-const props = defineProps<{ task: Task }>()
+const props = defineProps<{ task: Task; totals?: SubtaskTotals | null }>()
 const emit = defineEmits<{ moveProject: [projectId: string | null] }>()
 
 const { t } = useI18n()
@@ -220,6 +221,11 @@ const label =
       <div>
         <span :class="label">{{ t('taskView.spent') }}</span>
         <HoursBar :spent-min="task.spentMin" :estimate-min="task.estimateMin" />
+      </div>
+      <!-- Total con subtareas (D-32, CA-15) -->
+      <div v-if="totals && totals.count > 0">
+        <span :class="label">{{ t('taskView.withSubtasks', { count: totals.count }) }}</span>
+        <HoursBar :spent-min="totals.totalSpentMin" :estimate-min="totals.totalEstimateMin" />
       </div>
     </div>
 

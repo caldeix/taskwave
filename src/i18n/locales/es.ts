@@ -119,6 +119,7 @@ const es = {
     estimateHelp: 'Por ejemplo 2h 30m o 1d (1d = {hours} h). Vacío = sin estimado.',
     estimateInvalid: 'No se entiende. Usa días, horas y minutos: 1d 2h 30m.',
     spent: 'Horas',
+    withSubtasks: 'Con subtareas ({count})',
     hours: {
       noEstimate: '{spent} registradas · sin estimado',
       ofEstimate: '{spent} de {estimate} · {percent} %',
