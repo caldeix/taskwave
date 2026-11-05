@@ -3,10 +3,19 @@ import { useI18n } from 'vue-i18n'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
+import { useRouter } from 'vue-router'
 import { TASK_STATUSES } from '@/domain/status'
+import { useAuthStore } from '@/stores/auth'
 
 // Página provisional del step-2: se sustituirá por el layout real en el step-8.
 const { t } = useI18n()
+const router = useRouter()
+const authStore = useAuthStore()
+
+async function logout(): Promise<void> {
+  await authStore.logout()
+  await router.replace({ name: 'login' })
+}
 const titleClass =
   'm-0 w-fit max-w-full bg-radial-blue bg-clip-text font-title leading-tight font-semibold text-balance text-transparent'
 </script>
@@ -21,6 +30,12 @@ const titleClass =
       <p class="m-0 text-base leading-relaxed text-gray-500 dark:text-gray-400">
         {{ t('app.tagline') }}
       </p>
+      <div class="flex flex-wrap items-center gap-3">
+        <p class="m-0 text-sm text-gray-500 dark:text-gray-400">
+          {{ t('auth.loggedInAs', { email: authStore.user?.email ?? '' }) }}
+        </p>
+        <BaseButton variant="secondary" @click="logout">{{ t('auth.logout') }}</BaseButton>
+      </div>
     </header>
 
     <section class="flex flex-col gap-4">
