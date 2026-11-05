@@ -60,6 +60,8 @@ const es = {
     kanban: 'Kanban',
     calendarSoon: 'El calendario mensual llega en el step-11.',
     kanbanSoon: 'El kanban llega en el step-12.',
+    loadingTasks: 'Cargando tareas…',
+    taskSummary: 'Este mes: {month} tareas · Sin fecha: {undated}',
     allSubtitle: 'Tareas de todos tus proyectos.',
     inboxSubtitle: 'Tareas que no pertenecen a ningún proyecto.',
     projectSubtitle: 'Clave {key}: sus tareas se numeran {key}-1, {key}-2…',

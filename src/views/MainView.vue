@@ -7,6 +7,13 @@ import ViewSwitch from '@/components/layout/ViewSwitch.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
 import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
+import { endOfMonth, startOfMonth } from 'date-fns'
+import { useLiveTasks } from '@/composables/useLiveTasks'
+import { rangeQueries, undatedQuery } from '@/data/taskQueries'
+import { toDayKey } from '@/domain/dates'
+import type { TaskScope } from '@/domain/task'
+import { db } from '@/lib/firebase'
+import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { useProjectsStore } from '@/stores/projects'
 
@@ -19,6 +26,7 @@ const props = defineProps<{ scope: 'all' | 'inbox' | 'project' }>()
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const profileStore = useProfileStore()
 const projectsStore = useProjectsStore()
 
@@ -30,6 +38,37 @@ const project = computed(() =>
 const notFound = computed(() => props.scope === 'project' && projectsStore.loaded && !project.value)
 
 const view = computed<MainView>(() => viewFromQuery(route.query.vista, profileStore.prefs.view))
+
+// ---- Datos (step-9): tareas del mes actual y sin fecha del ámbito, en vivo ----
+const taskScope = computed<TaskScope | null>(() => {
+  if (props.scope === 'all') return { kind: 'all' }
+  if (props.scope === 'inbox') return { kind: 'inbox' }
+  return project.value ? { kind: 'project', projectId: project.value.id } : null
+})
+const monthRange = computed(() => {
+  const now = new Date()
+  return { from: toDayKey(startOfMonth(now)), to: toDayKey(endOfMonth(now)) }
+})
+const uid = computed(() => authStore.user?.uid ?? null)
+const scopeKey = computed(() => JSON.stringify(taskScope.value))
+
+const { tasks: monthTasks, loading: monthLoading } = useLiveTasks(() =>
+  uid.value && taskScope.value
+    ? {
+        key: `month:${uid.value}:${scopeKey.value}:${monthRange.value.from}`,
+        queries: rangeQueries(db, uid.value, monthRange.value, taskScope.value),
+      }
+    : null,
+)
+const { tasks: undatedTasks, loading: undatedLoading } = useLiveTasks(() =>
+  uid.value && taskScope.value
+    ? {
+        key: `undated:${uid.value}:${scopeKey.value}`,
+        queries: [undatedQuery(db, uid.value, taskScope.value)],
+      }
+    : null,
+)
+const liveLoading = computed(() => monthLoading.value || undatedLoading.value)
 
 function setView(next: MainView): void {
   void router.replace({ query: { ...route.query, vista: viewToQuery(next) } })
@@ -101,6 +140,13 @@ const subtitle = computed(() => {
         <Columns3 v-else class="h-10 w-10 text-gray-500 dark:text-gray-400" aria-hidden="true" />
         <p class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
           {{ view === 'calendar' ? t('views.calendarSoon') : t('views.kanbanSoon') }}
+        </p>
+        <!-- Provisional (step-9): comprueba la capa de datos hasta que llegue el calendario -->
+        <p class="m-0 font-text text-sm font-medium text-gray-800 dark:text-white" role="status">
+          <template v-if="liveLoading">{{ t('views.loadingTasks') }}</template>
+          <template v-else>
+            {{ t('views.taskSummary', { month: monthTasks.length, undated: undatedTasks.length }) }}
+          </template>
         </p>
       </section>
     </template>
