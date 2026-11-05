@@ -11,7 +11,14 @@ import {
   where,
   type Firestore,
 } from 'firebase/firestore'
-import { createTask, deleteTask, updateTaskDates, updateTaskStatus } from '@/data/taskWrites'
+import {
+  createTask,
+  deleteTask,
+  moveTaskToProject,
+  updateTaskDates,
+  updateTaskFields,
+  updateTaskStatus,
+} from '@/data/taskWrites'
 import { taskFromData } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import {
@@ -152,6 +159,67 @@ describe('updateTaskStatus (kanban, D-17)', () => {
     await expect(
       updateTaskStatus(db, U.active, id, { status: 'archivada' as never }),
     ).rejects.toThrow()
+  })
+})
+
+describe('updateTaskFields y moveTaskToProject (vista de tarea, D-12, D-46)', () => {
+  beforeEach(async () => {
+    await admin(async (db) => {
+      await setDoc(doc(db, 'users', U.active, 'projects', 'p2'), {
+        name: 'Casa',
+        key: 'CASA',
+        color: 'emerald',
+        icon: 'home',
+        order: 1,
+        archived: false,
+        taskCounter: 7,
+        createdAt: Timestamp.now(),
+      })
+    })
+  })
+
+  const read = async (id: string) =>
+    (await readAsAdmin((a) => getDoc(doc(a, 'users', U.active, 'tasks', id)))).data()!
+
+  it('guarda título, prioridad, estimado y enlaces; las reglas rechazan valores inválidos', async () => {
+    const db = as(env, U.active)
+    const { id } = await createTask(db, U.active, input())
+    await updateTaskFields(db, U.active, id, {
+      title: 'Nuevo título',
+      priority: 'high',
+      estimateMin: 1200,
+      weblinks: [{ url: 'https://vuejs.org/', title: 'Vue' }],
+    })
+    expect(await read(id)).toMatchObject({
+      title: 'Nuevo título',
+      priority: 'high',
+      estimateMin: 1200,
+      weblinks: [{ url: 'https://vuejs.org/', title: 'Vue' }],
+    })
+    await expect(updateTaskFields(db, U.active, id, { title: '' })).rejects.toThrow()
+    await expect(updateTaskFields(db, U.active, id, { priority: 'urgente' })).rejects.toThrow()
+    await expect(updateTaskFields(db, U.active, id, { estimateMin: -1 })).rejects.toThrow()
+  })
+
+  it('al mover de proyecto cambia la clave y sus horas pasan al nuevo proyecto', async () => {
+    const db = as(env, U.active)
+    const { id, key } = await createTask(db, U.active, input())
+    expect(key).toBe('EST-1')
+    await admin(async (a) => {
+      await setDoc(doc(a, 'users', U.active, 'worklogs', 'wx'), {
+        ...validWorklog(),
+        taskId: id,
+        projectId: 'p1',
+      })
+    })
+
+    expect(await moveTaskToProject(db, U.active, { id, projectId: 'p1' }, 'p2')).toBe('CASA-8')
+    expect(await read(id)).toMatchObject({ key: 'CASA-8', projectId: 'p2' })
+    const wl = await readAsAdmin((a) => getDoc(doc(a, 'users', U.active, 'worklogs', 'wx')))
+    expect(wl.data()?.projectId).toBe('p2')
+
+    expect(await moveTaskToProject(db, U.active, { id, projectId: 'p2' }, null)).toBe('INB-1')
+    expect(await moveTaskToProject(db, U.active, { id, projectId: null }, null)).toBeNull()
   })
 })
 
