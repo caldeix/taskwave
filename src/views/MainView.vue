@@ -8,6 +8,7 @@ import UndatedPanel from '@/components/calendar/UndatedPanel.vue'
 import ViewSwitch from '@/components/layout/ViewSwitch.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import NewTaskDialog from '@/components/tasks/NewTaskDialog.vue'
+import FiltersBar from '@/components/filters/FiltersBar.vue'
 import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
@@ -27,7 +28,9 @@ import { PROJECT_COLOR_CLASSES, type Project } from '@/domain/projects'
 import type { Task, TaskScope } from '@/domain/task'
 import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
 import { db } from '@/lib/firebase'
+import { applyFilters, sortTasks } from '@/domain/filters'
 import { useAuthStore } from '@/stores/auth'
+import { useFiltersStore } from '@/stores/filters'
 import { useProfileStore } from '@/stores/profile'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
@@ -119,6 +122,29 @@ const { tasks: boardTasks } = useLiveTasks(() =>
       }
     : null,
 )
+
+// ---- Filtros (step-13): se aplican en el cliente sobre lo ya leído ----
+const filtersStore = useFiltersStore()
+/** En el calendario, el periodo es el mes visible y «Sin fecha» no aplica (D-39). */
+const calendarFilters = computed(() => ({
+  ...filtersStore.filters,
+  quick: filtersStore.filters.quick === 'undated' ? ('none' as const) : filtersStore.filters.quick,
+}))
+const calendarTasks = computed(() =>
+  applyFilters(gridTasks.value, calendarFilters.value, { today: today.value, ignorePeriod: true }),
+)
+const undatedVisible = computed(() =>
+  applyFilters(undatedTasks.value, calendarFilters.value, {
+    today: today.value,
+    ignorePeriod: true,
+  }),
+)
+const boardVisible = computed(() =>
+  applyFilters(boardTasks.value, filtersStore.filters, { today: today.value }),
+)
+function kanbanSorter(tasks: Task[]): Task[] {
+  return sortTasks(tasks, filtersStore.filters.sort, filtersStore.filters.sortDir)
+}
 
 /** En «Todos» cada tarjeta muestra su proyecto; dentro de un proyecto no hace falta. */
 function projectOf(task: Task): Project | undefined {
@@ -255,6 +281,8 @@ async function confirmDelete(): Promise<void> {
         </div>
       </header>
 
+      <FiltersBar :view="view" />
+
       <!-- Calendario mensual con el panel «Sin fecha» (step-11) -->
       <div
         v-if="view === 'calendar'"
@@ -262,7 +290,7 @@ async function confirmDelete(): Promise<void> {
       >
         <MonthCalendar
           :month="month"
-          :tasks="gridTasks"
+          :tasks="calendarTasks"
           :today="today"
           :creating="creating"
           @move="moveTask"
@@ -272,16 +300,18 @@ async function confirmDelete(): Promise<void> {
           @change-month="changeMonth"
           @go-today="goToday"
         />
-        <UndatedPanel :tasks="undatedTasks" @open-task="openTask" />
+        <UndatedPanel :tasks="undatedVisible" @open-task="openTask" />
       </div>
 
       <!-- Kanban (step-12) -->
       <KanbanBoard
         v-else
-        :tasks="boardTasks"
+        :tasks="boardVisible"
         :today="today"
         :project-of="projectOf"
         :closed-window="closedWindow"
+        :sorter="kanbanSorter"
+        :hidden-statuses="filtersStore.filters.hiddenStatuses"
         @move="setStatus"
         @open="openTask"
         @delete="deleting = $event"
