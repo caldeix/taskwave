@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import AdminLink from '@/components/admin/AdminLink.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
@@ -34,6 +35,7 @@ const titleClass =
         <p class="m-0 text-sm text-gray-500 dark:text-gray-400">
           {{ t('auth.loggedInAs', { email: authStore.user?.email ?? '' }) }}
         </p>
+        <AdminLink />
         <BaseButton variant="secondary" @click="logout">{{ t('auth.logout') }}</BaseButton>
       </div>
     </header>
