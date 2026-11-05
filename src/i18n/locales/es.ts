@@ -37,7 +37,26 @@ const es = {
   common: {
     cancel: 'Cancelar',
     save: 'Guardar',
+    saving: 'Guardando…',
     delete: 'Eliminar',
+  },
+  markdown: {
+    write: 'Escribir',
+    preview: 'Vista previa',
+    toolbar: 'Formato',
+    emptyPreview: 'Nada que mostrar todavía.',
+    hint: 'Markdown · Ctrl+Enter guarda · Esc cancela',
+    length: '{count} de {max} caracteres',
+    tools: {
+      bold: 'Negrita',
+      italic: 'Cursiva',
+      heading: 'Título',
+      list: 'Lista',
+      checklist: 'Lista de casillas',
+      quote: 'Cita',
+      code: 'Código',
+      link: 'Enlace',
+    },
   },
   nav: {
     menu: 'Menú',
