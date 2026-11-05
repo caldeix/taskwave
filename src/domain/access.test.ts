@@ -53,4 +53,13 @@ describe('resolveAccess', () => {
   it('si el perfil no se pudo cargar, se trata como pendiente (sin acceso a la app)', () => {
     expect(resolveAccess(failed, app)).toBe('pending')
   })
+
+  it('el panel de admin solo lo ve un admin activo', () => {
+    const adminRoute = { name: 'admin-users', requiresAdmin: true }
+    expect(resolveAccess({ ...active, isAdmin: true }, adminRoute)).toBeNull()
+    expect(resolveAccess(active, adminRoute)).toBe('home')
+    expect(resolveAccess(pending, adminRoute)).toBe('pending')
+    expect(resolveAccess(blocked, adminRoute)).toBe('blocked')
+    expect(resolveAccess(anon, adminRoute)).toBe('login')
+  })
 })
