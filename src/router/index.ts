@@ -92,7 +92,9 @@ export function guardTarget(to: RouteLocationNormalized) {
   })
   if (!target) return null
   if (target === 'login') {
-    return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }
+    // Solo se recuerda la ruta si es de la app (no las pantallas de cuenta como «pendiente»).
+    const remember = to.meta.requiresAuth && to.fullPath !== '/'
+    return { name: 'login', query: remember ? { redirect: to.fullPath } : {} }
   }
   // Al entrar en la app desde el login, se vuelve a la ruta pedida si es interna.
   if (target === 'home' && to.meta.guest) {
