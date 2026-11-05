@@ -12,6 +12,8 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     /** Pantallas de cuenta (verificar, pendiente, bloqueado): requieren sesión. */
     requiresSession?: boolean
+    /** Solo para el admin activo (panel de usuarios). */
+    requiresAdmin?: boolean
   }
 }
 
@@ -24,6 +26,12 @@ export const router = createRouter({
       name: 'home',
       component: () => import('@/views/ShowcaseView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/admin/usuarios',
+      name: 'admin-users',
+      component: () => import('@/views/admin/AdminUsersView.vue'),
+      meta: { requiresAdmin: true },
     },
     {
       path: '/login',
@@ -79,6 +87,7 @@ export function currentAccessState(): AccessState {
     loggedIn: authStore.isLoggedIn,
     mustVerifyEmail: authStore.mustVerifyEmail,
     status: profileStore.status,
+    isAdmin: profileStore.isAdmin,
   }
 }
 
@@ -89,11 +98,12 @@ export function guardTarget(to: RouteLocationNormalized) {
     guest: to.meta.guest,
     requiresAuth: to.meta.requiresAuth,
     requiresSession: to.meta.requiresSession,
+    requiresAdmin: to.meta.requiresAdmin,
   })
   if (!target) return null
   if (target === 'login') {
     // Solo se recuerda la ruta si es de la app (no las pantallas de cuenta como «pendiente»).
-    const remember = to.meta.requiresAuth && to.fullPath !== '/'
+    const remember = (to.meta.requiresAuth || to.meta.requiresAdmin) && to.fullPath !== '/'
     return { name: 'login', query: remember ? { redirect: to.fullPath } : {} }
   }
   // Al entrar en la app desde el login, se vuelve a la ruta pedida si es interna.

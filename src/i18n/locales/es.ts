@@ -31,6 +31,55 @@ const es = {
     title: 'Página no encontrada',
     back: 'Volver al inicio',
   },
+  admin: {
+    link: 'Panel de admin',
+    pendingBadge: '{n} pendiente | {n} pendientes',
+    users: {
+      title: 'Usuarios',
+      subtitle: 'Aprueba las cuentas nuevas y bloquea o reactiva las existentes.',
+      back: 'Volver a la app',
+      search: 'Buscar por nombre o correo',
+      empty: 'No hay usuarios en esta vista.',
+      loading: 'Cargando usuarios…',
+      error: 'No se pudieron cargar los usuarios.',
+      you: 'Tú',
+      adminBadge: 'Admin',
+      registered: 'Alta: {date}',
+      approved: 'Aprobado: {date}',
+      providerPassword: 'Correo',
+      providerGoogle: 'Google',
+    },
+    filters: {
+      label: 'Filtrar por estado',
+      pending: 'Pendientes',
+      active: 'Activos',
+      blocked: 'Bloqueados',
+      all: 'Todos',
+    },
+    status: {
+      pending: 'Pendiente',
+      active: 'Activo',
+      blocked: 'Bloqueado',
+    },
+    actions: {
+      approve: 'Aprobar',
+      block: 'Bloquear',
+      reactivate: 'Reactivar',
+      done: {
+        approve: '{name} ya puede usar TaskWave.',
+        block: '{name} está bloqueado.',
+        reactivate: '{name} vuelve a estar activo.',
+      },
+      failed: 'No se pudo cambiar el estado. Vuelve a intentarlo.',
+    },
+    confirmBlock: {
+      title: '¿Bloquear la cuenta?',
+      message:
+        '{name} ({email}) dejará de poder usar TaskWave al momento. Sus datos se conservan y podrás reactivarlo cuando quieras.',
+      confirm: 'Bloquear',
+      cancel: 'Cancelar',
+    },
+  },
   account: {
     pending: {
       title: 'Cuenta pendiente de aprobación',

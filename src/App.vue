@@ -13,7 +13,13 @@ const profileStore = useProfileStore()
 // Redirección en vivo: si cambia la sesión o el estado (el admin aprueba o bloquea la cuenta),
 // se vuelve a aplicar la guarda a la ruta actual sin que el usuario tenga que recargar.
 watch(
-  () => [authStore.isLoggedIn, authStore.mustVerifyEmail, profileStore.status] as const,
+  () =>
+    [
+      authStore.isLoggedIn,
+      authStore.mustVerifyEmail,
+      profileStore.status,
+      profileStore.isAdmin,
+    ] as const,
   async () => {
     if (!authStore.ready) return
     await profileStore.whenLoaded()
