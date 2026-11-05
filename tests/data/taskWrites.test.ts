@@ -11,7 +11,7 @@ import {
   where,
   type Firestore,
 } from 'firebase/firestore'
-import { createTask, deleteTask } from '@/data/taskWrites'
+import { createTask, deleteTask, updateTaskDates } from '@/data/taskWrites'
 import { taskFromData } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import {
@@ -104,6 +104,23 @@ describe('createTask (D-12, D-15)', () => {
       createTask(as(env, U.active), U.active, input({ projectId: 'no-existe' })),
     ).rejects.toThrow()
     await expect(createTask(as(env, U.other), U.active, input())).rejects.toThrow()
+  })
+})
+
+describe('updateTaskDates (arrastrar en el calendario, D-21)', () => {
+  it('cambia las fechas y rechaza un fin anterior al inicio', async () => {
+    const db = as(env, U.active)
+    const { id } = await createTask(db, U.active, input({ endDate: '2026-11-07' }))
+    await updateTaskDates(db, U.active, id, { startDate: '2026-11-10', endDate: '2026-11-12' })
+    const stored = await readAsAdmin((a) => getDoc(doc(a, 'users', U.active, 'tasks', id)))
+    expect(stored.data()).toMatchObject({ startDate: '2026-11-10', endDate: '2026-11-12' })
+
+    await expect(
+      updateTaskDates(db, U.active, id, { startDate: '2026-11-10', endDate: '2026-11-01' }),
+    ).rejects.toThrow()
+    await expect(
+      updateTaskDates(as(env, U.other), U.active, id, { startDate: '2026-12-01', endDate: null }),
+    ).rejects.toThrow()
   })
 })
 
