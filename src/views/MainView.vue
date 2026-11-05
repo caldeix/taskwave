@@ -210,9 +210,9 @@ async function moveTask(
   }
 }
 
+/** Abre la vista de la tarea (step-14, D-23). */
 function openTask(task: Task): void {
-  // La vista de tarea llega en el step-14.
-  toasts.show(t('calendar.detailSoon', { key: task.key }), 'warning', 3000)
+  void router.push({ name: 'task', params: { taskKey: task.key } })
 }
 
 // ---- Borrado (step-10), desde el menú de las tarjetas del kanban ----
