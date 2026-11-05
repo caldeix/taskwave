@@ -6,10 +6,17 @@ import {
   onSnapshot,
   serverTimestamp,
   setDoc,
+  updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { buildNewProfile, type UserProfile, type UserStatus } from '@/domain/profile'
+import {
+  DEFAULT_PREFS,
+  buildNewProfile,
+  type UserPrefs,
+  type UserProfile,
+  type UserStatus,
+} from '@/domain/profile'
 import { useAuthStore } from './auth'
 
 /**
@@ -109,5 +116,23 @@ export const useProfileStore = defineStore('profile', () => {
     if (uid) await start(uid)
   }
 
-  return { profile, status, isAdmin, error, loadedFor, whenLoaded, retry }
+  /** Preferencias con los valores por defecto para lo que falte. */
+  const prefs = computed<UserPrefs>(() => ({ ...DEFAULT_PREFS, ...(profile.value?.prefs ?? {}) }))
+
+  /**
+   * Guarda preferencias en `users/{uid}.prefs` (solo cuentas activas, según las reglas).
+   * Solo escribe si cambia algo, para no gastar escrituras.
+   */
+  async function updatePrefs(patch: Partial<UserPrefs>): Promise<void> {
+    const uid = authStore.user?.uid
+    if (!uid || profile.value?.status !== 'active') return
+    const changes = Object.fromEntries(
+      Object.entries(patch)
+        .filter(([key, value]) => prefs.value[key as keyof UserPrefs] !== value)
+        .map(([key, value]) => [`prefs.${key}`, value]),
+    )
+    if (Object.keys(changes).length > 0) await updateDoc(doc(db, 'users', uid), changes)
+  }
+
+  return { profile, status, isAdmin, error, loadedFor, prefs, whenLoaded, retry, updatePrefs }
 })
