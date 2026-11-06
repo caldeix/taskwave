@@ -16,5 +16,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.ts'],
+    // Los días van en hora local (como en la app); en los tests, siempre la de Madrid.
+    env: { TZ: 'Europe/Madrid' },
   },
 })
