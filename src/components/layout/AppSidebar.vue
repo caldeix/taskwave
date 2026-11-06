@@ -16,6 +16,7 @@ import {
   Palette,
   PanelLeftClose,
   PanelLeftOpen,
+  Search,
   Pencil,
   Plus,
   Trash2,
@@ -35,6 +36,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
 import { useProjectsStore } from '@/stores/projects'
 import { useToastsStore } from '@/stores/toasts'
+import { useUiStore } from '@/stores/ui'
 
 /**
  * Menú lateral (step-8): «Todos», «Sin proyecto», proyectos con sus acciones, archivados,
@@ -51,6 +53,7 @@ const profileStore = useProfileStore()
 const projectsStore = useProjectsStore()
 const adminStore = useAdminStore()
 const toasts = useToastsStore()
+const ui = useUiStore()
 
 const isDev = import.meta.env.DEV
 // Ruta del logotipo con la base de la app (/taskwave/).
@@ -204,6 +207,25 @@ const iconButton =
 
     <!-- Cronómetro en marcha (step-19); en móvil ya está en la cabecera -->
     <TimerPill v-if="!props.mobile" :compact="props.collapsed" />
+
+    <!-- Buscador (step-24) -->
+    <button
+      type="button"
+      :class="[
+        'flex h-10 min-w-0 cursor-pointer items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 font-text text-sm text-gray-500 transition hover:border-blue-500 focus-visible:outline-2 focus-visible:outline-blue-600 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-400',
+        props.collapsed ? 'justify-center' : '',
+      ]"
+      :title="t('search.button')"
+      :aria-label="t('search.button')"
+      aria-keyshortcuts="Control+K /"
+      @click="ui.openSearch()"
+    >
+      <Search class="h-5 w-5 shrink-0" aria-hidden="true" />
+      <template v-if="!props.collapsed">
+        <span class="min-w-0 flex-1 truncate text-left">{{ t('search.short') }}</span>
+        <kbd class="shrink-0 font-text text-xs">Ctrl K</kbd>
+      </template>
+    </button>
 
     <!-- Vistas generales -->
     <div class="flex flex-col gap-1">

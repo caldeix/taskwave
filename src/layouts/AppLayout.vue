@@ -2,21 +2,27 @@
 import { computed, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Menu } from 'lucide-vue-next'
+import { Menu, Search } from 'lucide-vue-next'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
+import SearchDialog from '@/components/search/SearchDialog.vue'
 import TimerDialogs from '@/components/timer/TimerDialogs.vue'
 import TimerPill from '@/components/timer/TimerPill.vue'
 import ToastHost from '@/components/ui/ToastHost.vue'
+import { useShortcuts } from '@/composables/useShortcuts'
 import { useProfileStore } from '@/stores/profile'
+import { useUiStore } from '@/stores/ui'
 
 /**
  * Estructura de la app (step-8): menú lateral plegable a la izquierda (guardado en
  * `prefs.sidebarCollapsed`) y el contenido a la derecha. En móvil el menú es un cajón (D-49).
- * El mini cronómetro (step-19) va en el menú y, en móvil, en la cabecera.
+ * El mini cronómetro (step-19) va en el menú y, en móvil, en la cabecera. Los atajos de teclado y
+ * el buscador `Ctrl+K` (step-24) funcionan en toda la app.
  */
 const { t } = useI18n()
 const route = useRoute()
 const profileStore = useProfileStore()
+const ui = useUiStore()
+useShortcuts()
 
 const collapsed = computed(() => profileStore.prefs.sidebarCollapsed)
 const drawerOpen = ref(false)
@@ -75,11 +81,20 @@ function onKeydown(event: KeyboardEvent): void {
           {{ t('app.name') }}
         </span>
         <TimerPill class="ml-auto" compact />
+        <button
+          type="button"
+          class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-gray-800 transition hover:bg-gray-200 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-white dark:hover:bg-gray-700"
+          :aria-label="t('search.button')"
+          @click="ui.openSearch()"
+        >
+          <Search class="h-5 w-5" aria-hidden="true" />
+        </button>
       </header>
       <RouterView />
     </div>
 
     <TimerDialogs />
+    <SearchDialog />
     <ToastHost />
   </div>
 </template>

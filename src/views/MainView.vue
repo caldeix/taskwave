@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Inbox, Layers, Plus } from 'lucide-vue-next'
@@ -36,6 +36,7 @@ import { useProfileStore } from '@/stores/profile'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
 import { useToastsStore } from '@/stores/toasts'
+import { useUiStore } from '@/stores/ui'
 
 /**
  * Vista principal: «Todos», «Sin proyecto» o un proyecto (step-8), en modo calendario
@@ -184,6 +185,16 @@ const defaultProjectId = computed(() =>
   props.scope === 'project' ? (project.value?.id ?? null) : null,
 )
 const newTask = ref<{ startDate: DayKey | null; title: string } | null>(null)
+
+// Atajo `N` o «Nueva tarea» del buscador (step-24): abre el formulario aquí.
+const ui = useUiStore()
+watch(
+  () => ui.newTaskRequested,
+  (requested) => {
+    if (requested && ui.takeNewTaskRequest()) newTask.value = { startDate: today.value, title: '' }
+  },
+  { immediate: true },
+)
 const creating = ref(false)
 
 async function quickCreate(day: DayKey, taskTitle: string): Promise<void> {
