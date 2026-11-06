@@ -5,6 +5,8 @@ import { ExternalLink, Link2, Plus, X } from 'lucide-vue-next'
 import HoursBar from './HoursBar.vue'
 import type { SubtaskTotals } from '@/domain/links'
 import StatusSelect from './StatusSelect.vue'
+import TagPicker from '@/components/tags/TagPicker.vue'
+import TagsDialog from '@/components/tags/TagsDialog.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import FormMessage from '@/components/ui/FormMessage.vue'
@@ -118,6 +120,12 @@ function saveEstimate(): void {
   void save(() => tasksStore.updateFields(props.task, { estimateMin: minutes }))
 }
 
+// ---- Tags (D-40, step-17) ----
+const tagsDialogOpen = ref(false)
+function saveTags(tagIds: string[]): void {
+  void save(() => tasksStore.updateFields(props.task, { tagIds }))
+}
+
 // ---- Enlaces (D-45) ----
 const newUrl = ref('')
 const newTitle = ref('')
@@ -228,6 +236,17 @@ const label =
         <HoursBar :spent-min="totals.totalSpentMin" :estimate-min="totals.totalEstimateMin" />
       </div>
     </div>
+
+    <!-- Tags (D-40) -->
+    <section class="flex flex-col gap-2">
+      <span :class="label">{{ t('tags.title') }}</span>
+      <TagPicker
+        :model-value="task.tagIds"
+        @update:model-value="saveTags"
+        @manage="tagsDialogOpen = true"
+      />
+      <TagsDialog :open="tagsDialogOpen" @close="tagsDialogOpen = false" />
+    </section>
 
     <!-- Enlaces (D-45) -->
     <section class="flex flex-col gap-2">
