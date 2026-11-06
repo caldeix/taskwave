@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ArrowDownWideNarrow,
@@ -8,11 +8,13 @@ import {
   Eye,
   EyeOff,
   Flag,
+  Settings2,
   Tag,
   X,
 } from 'lucide-vue-next'
 import PriorityIcon from '@/components/tasks/PriorityIcon.vue'
 import PopoverButton from '@/components/ui/PopoverButton.vue'
+import TagsDialog from '@/components/tags/TagsDialog.vue'
 import { PERIODS, SORTS } from '@/domain/filters'
 import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
 import { STATUS_STYLES, TASK_STATUSES } from '@/domain/status'
@@ -29,6 +31,7 @@ const props = defineProps<{ view: 'calendar' | 'kanban' }>()
 const { t } = useI18n()
 const store = useFiltersStore()
 const tagsStore = useTagsStore()
+const tagsDialogOpen = ref(false)
 
 const f = computed(() => store.filters)
 const visibleStatuses = computed(() => TASK_STATUSES.length - f.value.hiddenStatuses.length)
@@ -186,7 +189,16 @@ const legend =
           </label>
         </fieldset>
       </template>
+      <button
+        type="button"
+        class="inline-flex w-fit cursor-pointer items-center gap-1.5 border-0 bg-transparent p-0 font-text text-xs font-bold text-blue-600 hover:underline focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-blue-400"
+        @click="tagsDialogOpen = true"
+      >
+        <Settings2 class="h-3.5 w-3.5" aria-hidden="true" />
+        {{ t('tags.manage') }}
+      </button>
     </PopoverButton>
+    <TagsDialog :open="tagsDialogOpen" @close="tagsDialogOpen = false" />
 
     <!-- Prioridad (D-51) -->
     <PopoverButton :label="t('filters.priority')">
