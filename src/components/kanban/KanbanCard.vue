@@ -3,23 +3,30 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ArrowRight, CalendarClock, Trash2 } from 'lucide-vue-next'
 import PriorityIcon from '@/components/tasks/PriorityIcon.vue'
+import TagChip from '@/components/tags/TagChip.vue'
 import DropdownMenu, { type MenuItem } from '@/components/ui/DropdownMenu.vue'
 import { fromDayKey, type DayKey } from '@/domain/dates'
 import { isOverdue } from '@/domain/kanban'
 import { PROJECT_COLOR_CLASSES, type Project } from '@/domain/projects'
 import { TASK_STATUSES, isClosedStatus, type TaskStatus } from '@/domain/status'
 import type { Task } from '@/domain/task'
+import { tagsOf } from '@/domain/tags'
 import { useTaskDrag } from '@/composables/useTaskDrag'
+import { useTagsStore } from '@/stores/tags'
 
 /**
- * Tarjeta del kanban (step-12): clave, título, prioridad, proyecto (en «Todos») y fechas,
- * con las atrasadas en coral (D-35). Se arrastra a otra columna o se mueve desde su menú.
+ * Tarjeta del kanban (step-12): clave, título, prioridad, proyecto (en «Todos»), fechas y tags
+ * (step-17), con las atrasadas en coral (D-35). Se arrastra a otra columna o se mueve desde su menú.
  */
 const props = defineProps<{ task: Task; today: DayKey; project?: Project }>()
 const emit = defineEmits<{ open: []; move: [status: TaskStatus]; delete: [] }>()
 
 const { t, locale } = useI18n()
 const { start, end } = useTaskDrag()
+
+const tagsStore = useTagsStore()
+const MAX_CARD_TAGS = 3
+const tags = computed(() => tagsOf(props.task.tagIds, tagsStore.all))
 
 const overdue = computed(() => isOverdue(props.task, props.today))
 const closed = computed(() => isClosedStatus(props.task.status))
@@ -114,5 +121,23 @@ function onMenu(key: string): void {
         <span v-if="overdue" class="sr-only">{{ t('kanban.overdue') }}</span>
       </span>
     </div>
+
+    <ul v-if="tags.length" class="m-0 flex list-none flex-wrap gap-1 p-0">
+      <li v-for="tag in tags.slice(0, MAX_CARD_TAGS)" :key="tag.id" class="min-w-0">
+        <TagChip :tag="tag" small />
+      </li>
+      <li
+        v-if="tags.length > MAX_CARD_TAGS"
+        class="font-text text-xs text-gray-500 dark:text-gray-400"
+        :title="
+          tags
+            .slice(MAX_CARD_TAGS)
+            .map((tag) => tag.name)
+            .join(', ')
+        "
+      >
+        +{{ tags.length - MAX_CARD_TAGS }}
+      </li>
+    </ul>
   </article>
 </template>
