@@ -19,3 +19,20 @@ export function formatDateTime(ms: number | null): string {
 export function formatDate(ms: number | null): string {
   return ms === null ? '—' : dateOnly.format(ms)
 }
+
+const relative = new Intl.RelativeTimeFormat('es-ES', { numeric: 'auto' })
+
+/**
+ * Fecha relativa para comentarios: «ahora», «hace 5 minutos», «hace 3 horas» y, desde un día,
+ * la fecha completa («5 nov 2026, 21:18»).
+ */
+export function formatRelative(ms: number | null, nowMs: number): string {
+  if (ms === null) return '—'
+  const seconds = Math.round((nowMs - ms) / 1000)
+  if (seconds < 45) return 'ahora'
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return relative.format(-minutes, 'minute')
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return relative.format(-hours, 'hour')
+  return formatDateTime(ms)
+}
