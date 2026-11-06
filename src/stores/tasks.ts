@@ -13,11 +13,13 @@ import {
   type EditableTaskFields,
 } from '@/data/taskWrites'
 import { addComment, deleteComment, editComment } from '@/data/comments'
+import { addWorklog, deleteWorklog, updateWorklog } from '@/data/worklogs'
 import { todayKey } from '@/domain/dates'
 import { statusChangePatch } from '@/domain/kanban'
 import { isClosedStatus, type TaskStatus } from '@/domain/status'
 import type { Task, TaskLink } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
+import type { Entry } from '@/domain/worklog'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from './auth'
 import { useTimerStore } from './timer'
@@ -98,6 +100,19 @@ export const useTasksStore = defineStore('tasks', () => {
     return deleteComment(db, requireUid(), task.id, commentId)
   }
 
+  // ---- Registro de horas (step-20); cada cambio ajusta el total de la tarea ----
+  function logHours(task: Task, entry: Entry): Promise<string> {
+    return addWorklog(db, requireUid(), task.id, entry)
+  }
+
+  function editHours(worklogId: string, entry: Entry): Promise<void> {
+    return updateWorklog(db, requireUid(), worklogId, entry)
+  }
+
+  function removeHours(worklogId: string): Promise<void> {
+    return deleteWorklog(db, requireUid(), worklogId)
+  }
+
   return {
     create,
     remove,
@@ -111,5 +126,8 @@ export const useTasksStore = defineStore('tasks', () => {
     comment,
     editCommentBody,
     removeComment,
+    logHours,
+    editHours,
+    removeHours,
   }
 })
