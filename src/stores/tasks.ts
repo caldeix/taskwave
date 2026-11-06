@@ -12,6 +12,7 @@ import {
   type DeleteSummary,
   type EditableTaskFields,
 } from '@/data/taskWrites'
+import { addComment, deleteComment, editComment } from '@/data/comments'
 import { todayKey } from '@/domain/dates'
 import { statusChangePatch } from '@/domain/kanban'
 import type { TaskStatus } from '@/domain/status'
@@ -79,6 +80,19 @@ export const useTasksStore = defineStore('tasks', () => {
     return setTaskParent(db, requireUid(), taskId, parentId)
   }
 
+  // ---- Comentarios (step-18) ----
+  function comment(task: Task, body: string): Promise<string> {
+    return addComment(db, requireUid(), task.id, body)
+  }
+
+  function editCommentBody(task: Task, commentId: string, body: string): Promise<void> {
+    return editComment(db, requireUid(), task.id, commentId, body)
+  }
+
+  function removeComment(task: Task, commentId: string): Promise<void> {
+    return deleteComment(db, requireUid(), task.id, commentId)
+  }
+
   return {
     create,
     remove,
@@ -89,5 +103,8 @@ export const useTasksStore = defineStore('tasks', () => {
     link,
     unlink,
     setParent,
+    comment,
+    editCommentBody,
+    removeComment,
   }
 })
