@@ -6,6 +6,7 @@ import { ArrowLeft, PanelRightClose, PanelRightOpen, Trash2 } from 'lucide-vue-n
 import TaskDescription from '@/components/task/TaskDescription.vue'
 import TaskDetailsPanel from '@/components/task/TaskDetailsPanel.vue'
 import TaskRelations from '@/components/task/TaskRelations.vue'
+import TaskTabs from '@/components/task/TaskTabs.vue'
 import TaskTitle from '@/components/task/TaskTitle.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
@@ -23,8 +24,8 @@ import { useToastsStore } from '@/stores/toasts'
 /**
  * Vista de una tarea (step-14, D-23): sustituye al calendario o al kanban, tiene su URL
  * (`/t/EST-12`) y el panel de datos a la derecha, plegable. La descripción es markdown
- * (step-15), con sus vínculos y subtareas (step-16); los comentarios, el registro de horas y la
- * actividad llegan en los steps 18 a 22.
+ * (step-15), con sus vínculos y subtareas (step-16) y sus comentarios (step-18); el registro de
+ * horas y la actividad llegan en los steps 20 y 22.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -200,34 +201,7 @@ const iconButton =
           :loading="related.loading.value"
         />
 
-        <section class="flex flex-col gap-2">
-          <div class="flex gap-4 border-b border-gray-200 dark:border-gray-700" role="tablist">
-            <span
-              role="tab"
-              aria-selected="true"
-              class="-mb-px border-b-2 border-blue-500 pb-2 font-text text-sm font-bold text-blue-600 dark:text-blue-400"
-            >
-              {{ t('taskView.tabs.comments') }}
-            </span>
-            <span
-              role="tab"
-              aria-selected="false"
-              class="pb-2 font-text text-sm text-gray-500 dark:text-gray-400"
-            >
-              {{ t('taskView.tabs.worklog') }}
-            </span>
-            <span
-              role="tab"
-              aria-selected="false"
-              class="pb-2 font-text text-sm text-gray-500 dark:text-gray-400"
-            >
-              {{ t('taskView.tabs.activity') }}
-            </span>
-          </div>
-          <p class="m-0 font-text text-xs text-gray-500 dark:text-gray-400">
-            {{ t('taskView.tabsSoon') }}
-          </p>
-        </section>
+        <TaskTabs :task="shown" />
       </article>
 
       <TaskDetailsPanel
