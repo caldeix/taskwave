@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
+import { onMounted, ref, useId, watch } from 'vue'
 
 /**
  * Diálogo modal con `<dialog>` nativo (foco atrapado, Esc y fondo oscurecido).
@@ -11,15 +11,15 @@ const emit = defineEmits<{ close: [] }>()
 const dialog = ref<HTMLDialogElement | null>(null)
 const titleId = useId()
 
-watch(
-  () => props.open,
-  (open) => {
-    if (!dialog.value) return
-    if (open && !dialog.value.open) dialog.value.showModal()
-    if (!open && dialog.value.open) dialog.value.close()
-  },
-  { flush: 'post' },
-)
+function sync(open: boolean): void {
+  if (!dialog.value) return
+  if (open && !dialog.value.open) dialog.value.showModal()
+  if (!open && dialog.value.open) dialog.value.close()
+}
+
+watch(() => props.open, sync, { flush: 'post' })
+// Si se monta ya abierto (p. ej. «nueva tarea» con el atajo N desde otra página), se abre aquí.
+onMounted(() => sync(props.open))
 </script>
 
 <template>
