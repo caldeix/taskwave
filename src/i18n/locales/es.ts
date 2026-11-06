@@ -410,6 +410,12 @@ const es = {
     hint: '↑ ↓ para moverte · Enter para abrir · Atajos: N nueva tarea, C calendario, K kanban, / o Ctrl+K buscar',
     go: { newTask: 'Nueva tarea' },
   },
+  pwa: {
+    newVersion: 'Hay una versión nueva de TaskWave.',
+    reload: 'Recargar',
+    later: 'Más tarde',
+    offlineReady: 'TaskWave ya se puede abrir sin conexión.',
+  },
   nav: {
     settings: 'Ajustes',
     stats: 'Estadísticas',

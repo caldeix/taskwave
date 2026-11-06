@@ -7,7 +7,6 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 import SearchDialog from '@/components/search/SearchDialog.vue'
 import TimerDialogs from '@/components/timer/TimerDialogs.vue'
 import TimerPill from '@/components/timer/TimerPill.vue'
-import ToastHost from '@/components/ui/ToastHost.vue'
 import { useShortcuts } from '@/composables/useShortcuts'
 import { useThemeSync } from '@/composables/useThemeSync'
 import { useProfileStore } from '@/stores/profile'
@@ -97,6 +96,5 @@ function onKeydown(event: KeyboardEvent): void {
 
     <TimerDialogs />
     <SearchDialog />
-    <ToastHost />
   </div>
 </template>

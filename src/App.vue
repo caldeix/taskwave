@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
+import PwaUpdatePrompt from '@/components/layout/PwaUpdatePrompt.vue'
+import ToastHost from '@/components/ui/ToastHost.vue'
 import { guardTarget } from '@/router'
 import { useAuthStore } from '@/stores/auth'
 import { useProfileStore } from '@/stores/profile'
@@ -31,4 +33,7 @@ watch(
 
 <template>
   <RouterView />
+  <PwaUpdatePrompt />
+  <!-- Avisos en toda la app, también en el login (step-26) -->
+  <ToastHost />
 </template>
