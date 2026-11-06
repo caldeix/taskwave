@@ -256,6 +256,12 @@ const es = {
       note: 'Máximo 500 caracteres.',
     },
   },
+  started: {
+    title: 'Tareas iniciadas',
+    empty: 'Ninguna tarea abierta con horas. Inicia el cronómetro o registra horas en una tarea.',
+    running: 'Cronómetro en marcha',
+    noEstimate: '{hours} · sin estimado',
+  },
   nav: {
     menu: 'Menú',
     openMenu: 'Abrir el menú',

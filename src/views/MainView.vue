@@ -8,6 +8,7 @@ import UndatedPanel from '@/components/calendar/UndatedPanel.vue'
 import ViewSwitch from '@/components/layout/ViewSwitch.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import NewTaskDialog from '@/components/tasks/NewTaskDialog.vue'
+import StartedStrip from '@/components/tasks/StartedStrip.vue'
 import FiltersBar from '@/components/filters/FiltersBar.vue'
 import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -151,6 +152,11 @@ function projectOf(task: Task): Project | undefined {
   return props.scope === 'all' && task.projectId ? projectsStore.byId(task.projectId) : undefined
 }
 
+/** Nombre del proyecto en la franja de iniciadas de «Todos». */
+function projectName(projectId: string | null): string {
+  return projectId ? (projectsStore.byId(projectId)?.name ?? '') : t('nav.inbox')
+}
+
 async function setStatus(task: Task, status: TaskStatus): Promise<void> {
   try {
     await tasksStore.setStatus(task, status)
@@ -280,6 +286,13 @@ async function confirmDelete(): Promise<void> {
           </BaseButton>
         </div>
       </header>
+
+      <!-- Tareas iniciadas (step-21, D-34) -->
+      <StartedStrip
+        v-if="taskScope"
+        :scope="taskScope"
+        :show-project="scope === 'all' ? projectName : undefined"
+      />
 
       <FiltersBar :view="view" />
 
