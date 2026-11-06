@@ -140,6 +140,9 @@ service cloud.firestore {
           && !changedKeys().hasAny(['email', 'provider', 'status', 'admin', 'createdAt',
                                     'approvedAt', 'approvedBy'])
           && isValidProfileBody(request.resource.data)
+          // El cronómetro empieza siempre con la hora del servidor (step-19, D-26).
+          && (!changedKeys().hasAny(['activeTimer']) || request.resource.data.activeTimer == null
+              || request.resource.data.activeTimer.startedAt == request.time)
         ) || (
           isAdmin() && uid != request.auth.uid
           && changedKeys().hasOnly(['status', 'approvedAt', 'approvedBy'])
