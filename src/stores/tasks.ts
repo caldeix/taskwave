@@ -15,11 +15,12 @@ import {
 import { addComment, deleteComment, editComment } from '@/data/comments'
 import { todayKey } from '@/domain/dates'
 import { statusChangePatch } from '@/domain/kanban'
-import type { TaskStatus } from '@/domain/status'
+import { isClosedStatus, type TaskStatus } from '@/domain/status'
 import type { Task, TaskLink } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from './auth'
+import { useTimerStore } from './timer'
 
 /**
  * Acciones sobre tareas del usuario con sesión (steps 10 a 12). Las lecturas van por
@@ -53,6 +54,10 @@ export const useTasksStore = defineStore('tasks', () => {
   /** Cambia el estado con los automatismos de D-17 (no hace nada si no cambia). */
   async function setStatus(task: Task, status: TaskStatus): Promise<void> {
     if (task.status === status) return
+    // Al cerrar una tarea con el cronómetro en marcha, se para y se registran sus horas (D-17).
+    const timer = useTimerStore()
+    if (isClosedStatus(status) && timer.isRunningOn(task.id) && !(await timer.confirmStop()))
+      throw new Error('timer-stop-failed')
     await updateTaskStatus(db, requireUid(), task.id, statusChangePatch(task, status, todayKey()))
   }
 
