@@ -114,6 +114,7 @@ describe('perfil: edición propia', () => {
   it('un usuario activo cambia sus preferencias y su nombre', async () => {
     const ref = doc(as(env, U.active), 'users', U.active)
     await assertSucceeds(updateDoc(ref, { 'prefs.theme': 'dark', displayName: 'Nuevo nombre' }))
+    await assertSucceeds(updateDoc(ref, { 'prefs.startedCollapsed': true }))
   })
 
   it('un usuario activo arranca y para su cronómetro', async () => {
@@ -148,6 +149,7 @@ describe('perfil: edición propia', () => {
     await assertFails(updateDoc(ref, { 'prefs.theme': 'rosa' }))
     await assertFails(updateDoc(ref, { 'prefs.hoursPerDay': 30 }))
     await assertFails(updateDoc(ref, { 'prefs.otra': true }))
+    await assertFails(updateDoc(ref, { 'prefs.startedCollapsed': 'sí' }))
     await assertFails(updateDoc(ref, { activeTimer: { taskId: 't1' } }))
     await assertFails(updateDoc(ref, { extra: 1 }))
   })

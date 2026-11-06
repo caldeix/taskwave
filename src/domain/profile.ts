@@ -13,6 +13,8 @@ export interface UserPrefs {
   theme: ThemePref
   view: 'calendar' | 'kanban'
   sidebarCollapsed: boolean
+  /** Franja de tareas iniciadas plegada (step-21, D-34). */
+  startedCollapsed: boolean
   /** Horas de una jornada para el «1d» de las duraciones (P-8). */
   hoursPerDay: number
   /** Aviso del cronómetro olvidado, en horas (D-28). */
@@ -62,6 +64,7 @@ export const DEFAULT_PREFS: UserPrefs = {
   theme: 'system',
   view: 'calendar',
   sidebarCollapsed: false,
+  startedCollapsed: false,
   hoursPerDay: 8,
   timerWarnHours: 8,
   filters: null,

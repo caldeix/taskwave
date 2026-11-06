@@ -86,10 +86,12 @@ service cloud.firestore {
 
     function isValidPrefs(p) {
       return p is map
-        && p.keys().hasOnly(['theme', 'view', 'sidebarCollapsed', 'hoursPerDay', 'timerWarnHours', 'filters'])
+        && p.keys().hasOnly(['theme', 'view', 'sidebarCollapsed', 'startedCollapsed', 'hoursPerDay',
+                           'timerWarnHours', 'filters'])
         && (!('theme' in p) || p.theme in ['light', 'dark', 'system'])
         && (!('view' in p) || p.view in ['calendar', 'kanban'])
         && (!('sidebarCollapsed' in p) || p.sidebarCollapsed is bool)
+        && (!('startedCollapsed' in p) || p.startedCollapsed is bool)
         && (!('hoursPerDay' in p) || isIntIn(p.hoursPerDay, 1, 24))
         && (!('timerWarnHours' in p) || isIntIn(p.timerWarnHours, 1, 24))
         && (!('filters' in p) || p.filters == null || p.filters is map);
