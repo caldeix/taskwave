@@ -6,6 +6,7 @@ import {
   minutesByProject,
   minutesByTag,
   minutesByWeek,
+  minutesPerDay,
   rangeLength,
   shiftAnchor,
   statsRange,
@@ -154,5 +155,17 @@ describe('estimateAccuracy (D-31)', () => {
 
   it('sin tareas con estimado no hay medias', () => {
     expect(estimateAccuracy([t('D', null, 30)])).toMatchObject({ rows: [], meanAbsPct: null })
+  })
+})
+
+describe('minutesPerDay (horas de cada día del calendario)', () => {
+  it('suma por día dentro del ámbito de la vista', () => {
+    expect(minutesPerDay(logs, { kind: 'all' })).toEqual({
+      '2026-11-02': 90,
+      '2026-11-04': 120,
+      '2026-11-09': 45,
+    })
+    expect(minutesPerDay(logs, { kind: 'project', projectId: 'p2' })).toEqual({ '2026-11-04': 120 })
+    expect(minutesPerDay(logs, { kind: 'inbox' })).toEqual({ '2026-11-09': 45 })
   })
 })

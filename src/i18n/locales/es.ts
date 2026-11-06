@@ -482,6 +482,7 @@ const es = {
     moveFailed: 'No se pudo cambiar el estado de {key}. Vuelve a intentarlo.',
   },
   calendar: {
+    hoursLogged: '{hours} registradas este día',
     today: 'Hoy',
     prev: 'Mes anterior',
     next: 'Mes siguiente',

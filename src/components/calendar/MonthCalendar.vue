@@ -16,18 +16,22 @@ import {
   type WeekSegment,
 } from '@/domain/calendar'
 import { fromDayKey, type DayKey } from '@/domain/dates'
+import { formatHours } from '@/domain/duration'
 import type { Task } from '@/domain/task'
 import { useTaskDrag } from '@/composables/useTaskDrag'
 
 /**
  * Calendario mensual (step-11): semanas de lunes a domingo, tareas como barras (D-20),
- * arrastrar para cambiar de día (D-21), «+N más» y alta rápida al pulsar un día (D-22).
+ * arrastrar para cambiar de día (D-21), «+N más», alta rápida al pulsar un día (D-22) y las
+ * horas registradas de cada día (step-24, D-52).
  */
 const props = defineProps<{
   month: Date
   tasks: Task[]
   today: DayKey
   creating: boolean
+  /** Horas registradas de cada día (step-24, D-52). */
+  minutesByDay?: Record<DayKey, number>
 }>()
 const emit = defineEmits<{
   move: [task: Task, dates: { startDate: DayKey; endDate: DayKey | null }]
@@ -241,8 +245,15 @@ function openDayList(day: DayKey, week: WeekView): void {
             v-for="(day, c) in week.days"
             :key="`n-${day}`"
             :style="{ gridColumn: c + 1, gridRow: 1 }"
-            class="flex items-start justify-end px-1.5 pt-1"
+            class="flex items-start justify-between gap-1 px-1.5 pt-1"
           >
+            <span
+              v-if="minutesByDay?.[day]"
+              class="truncate pt-1 font-text text-[11px] leading-none font-medium text-gray-500 tabular-nums dark:text-gray-400"
+              :title="t('calendar.hoursLogged', { hours: formatHours(minutesByDay[day]!) })"
+              >{{ formatHours(minutesByDay[day]!) }}</span
+            >
+            <span v-else />
             <span
               :class="[
                 'inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 font-text text-xs',

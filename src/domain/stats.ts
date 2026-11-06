@@ -211,3 +211,20 @@ export function estimateAccuracy(
 export function rangeLength(range: DayRange): number {
   return differenceInCalendarDays(fromDayKey(range.to), fromDayKey(range.from)) + 1
 }
+
+/**
+ * Minutos de cada día con horas, solo de los registros del ámbito de la vista (todos, la bandeja
+ * o un proyecto): las horas de cada día del calendario (step-24, D-52).
+ */
+export function minutesPerDay(
+  logs: Worklog[],
+  scope: { kind: 'all' } | { kind: 'inbox' } | { kind: 'project'; projectId: string },
+): Record<DayKey, number> {
+  const out: Record<DayKey, number> = {}
+  for (const l of logs) {
+    if (scope.kind === 'inbox' && l.projectId !== null) continue
+    if (scope.kind === 'project' && l.projectId !== scope.projectId) continue
+    out[l.date] = (out[l.date] ?? 0) + l.minutes
+  }
+  return out
+}

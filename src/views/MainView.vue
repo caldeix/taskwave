@@ -14,6 +14,7 @@ import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useLiveTasks } from '@/composables/useLiveTasks'
+import { useLiveWorklogs } from '@/composables/useLiveWorklogs'
 import { closedSinceQuery, openQuery, rangeQueries, undatedQuery } from '@/data/taskQueries'
 import { CLOSED_WINDOWS, closedSinceMs, nextClosedWindow, type ClosedWindow } from '@/domain/kanban'
 import type { TaskStatus } from '@/domain/status'
@@ -30,6 +31,7 @@ import type { Task, TaskScope } from '@/domain/task'
 import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
 import { db } from '@/lib/firebase'
 import { applyFilters, sortTasks } from '@/domain/filters'
+import { minutesPerDay } from '@/domain/stats'
 import { useAuthStore } from '@/stores/auth'
 import { useFiltersStore } from '@/stores/filters'
 import { useProfileStore } from '@/stores/profile'
@@ -91,6 +93,14 @@ const scopeKey = computed(() => JSON.stringify(taskScope.value))
 /** Mes del calendario en la URL (`?mes=2026-11`); por defecto, el actual. */
 const month = computed(() => parseMonthParam(route.query.mes))
 const visibleRange = computed(() => gridRange(monthGrid(month.value)))
+
+// Horas registradas de cada día del calendario, en el ámbito de la vista (step-24, D-52).
+const gridLogs = useLiveWorklogs(() =>
+  uid.value && view.value === 'calendar' ? { uid: uid.value, range: visibleRange.value } : null,
+)
+const hoursByDay = computed(() =>
+  taskScope.value ? minutesPerDay(gridLogs.value, taskScope.value) : {},
+)
 const today = ref<DayKey>(todayKey())
 
 // Cada vista escucha solo sus consultas, para no gastar lecturas en la que no se ve.
@@ -317,6 +327,7 @@ async function confirmDelete(): Promise<void> {
           :tasks="calendarTasks"
           :today="today"
           :creating="creating"
+          :minutes-by-day="hoursByDay"
           @move="moveTask"
           @quick-create="quickCreate"
           @open-new="(day, text) => (newTask = { startDate: day, title: text })"
