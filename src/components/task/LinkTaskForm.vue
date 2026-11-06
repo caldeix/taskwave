@@ -5,19 +5,17 @@ import { getDocs, limit, query } from 'firebase/firestore'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
-import { useLiveTasks } from '@/composables/useLiveTasks'
-import { openQuery, subtasksQuery, taskByKeyQuery } from '@/data/taskQueries'
+import { useTaskSearch } from '@/composables/useTaskSearch'
+import { subtasksQuery } from '@/data/taskQueries'
 import {
   MAX_LINKS,
   RELATION_KINDS,
   checkRelation,
   isLinkType,
-  parseTaskKey,
-  searchTasks,
   type RelationError,
   type RelationKind,
 } from '@/domain/links'
-import { taskFromData, type Task } from '@/domain/task'
+import type { Task } from '@/domain/task'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
@@ -49,40 +47,7 @@ const kindOptions = computed(() =>
   RELATION_KINDS.map((k) => ({ value: k, label: t(`relations.kinds.${k}`) })),
 )
 
-const { tasks: openTasks } = useLiveTasks(() =>
-  uid.value
-    ? { key: `link-search:${uid.value}`, queries: [openQuery(db, uid.value, { kind: 'all' })] }
-    : null,
-)
-
-/** Tarea encontrada por su clave exacta (puede estar cerrada). */
-const byKey = ref<Task | null>(null)
-const searchingKey = ref(false)
-let keyTimer: ReturnType<typeof setTimeout> | undefined
-watch(text, (value) => {
-  clearTimeout(keyTimer)
-  byKey.value = null
-  const key = parseTaskKey(value)
-  searchingKey.value = Boolean(key && uid.value)
-  if (!key || !uid.value) return
-  keyTimer = setTimeout(async () => {
-    try {
-      const snap = await getDocs(taskByKeyQuery(db, uid.value!, key))
-      const d = snap.docs[0]
-      if (d && parseTaskKey(text.value) === key) byKey.value = taskFromData(d.id, d.data())
-    } catch {
-      // Sin conexión: se busca solo en las abiertas.
-    } finally {
-      if (parseTaskKey(text.value) === key) searchingKey.value = false
-    }
-  }, 250)
-})
-
-const results = computed(() => {
-  const pool = byKey.value ? [byKey.value, ...openTasks.value] : openTasks.value
-  const unique = [...new Map(pool.map((p) => [p.id, p])).values()]
-  return searchTasks(unique, text.value, new Set([props.task.id]))
-})
+const { results, searchingKey } = useTaskSearch(text, { exclude: () => [props.task.id] })
 
 watch(results, () => {
   active.value = 0
