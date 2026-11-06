@@ -42,6 +42,9 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Atajos de teclado: `N` nueva tarea (también desde otras páginas), `C` calendario y `K` kanban. No hacen nada mientras se escribe ni con Ctrl, Alt o Cmd (salvo `Ctrl+K`).
 - Las casillas del calendario muestran las horas registradas ese día (del ámbito de la vista).
 - Duplicar una tarea desde su vista o desde el menú de su tarjeta: copia título (con «(copia)»), proyecto, fechas, prioridad, estimado, descripción, tags, enlaces y padre; nace Pendiente, sin horas, vínculos ni comentarios, y su actividad dice de qué tarea es copia.
+- Ajustes (`/ajustes`, en el menú): nombre, horas de una jornada (el «1d»), aviso del cronómetro olvidado, tema (claro, oscuro o el del sistema) y datos de la cuenta con la versión de la app.
+- El tema se guarda en la cuenta y se aplica en todos los dispositivos; el botón del menú también lo guarda.
+- Baja de la cuenta desde Ajustes: hay que escribir BORRAR y volver a identificarse (contraseña o Google); se borran todas las tareas con sus comentarios y actividad, las horas, los proyectos, los tags, el perfil y la cuenta de acceso, y se vuelve al login con un aviso. Un usuario bloqueado no puede darse de baja.
 - Duraciones al estilo Jira (`1d 2h 30m`, con 1d = jornada configurada).
 - Barra de filtros: ojo de estados visibles (oculta columnas del kanban y barras del calendario), periodo (hoy, esta semana, este mes, este año; entran las tareas que tocan el periodo), orden (por fecha fin o inicio, por inicio o por fin, en los dos sentidos), tags (cualquiera o todos), prioridad, «Atrasadas» y «Sin fecha», con «Quitar filtros». En el calendario el periodo es el mes visible, así que el periodo, el orden y «Sin fecha» solo salen en el kanban.
 - Los filtros se guardan en las preferencias del usuario (los mismos en todos los proyectos y dispositivos), juntando los cambios seguidos en una sola escritura.
