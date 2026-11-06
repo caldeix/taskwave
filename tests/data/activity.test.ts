@@ -1,6 +1,14 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { RulesTestEnvironment } from '@firebase/rules-unit-testing'
-import { Timestamp, collection, doc, getDocs, setDoc, type Firestore } from 'firebase/firestore'
+import {
+  Timestamp,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  type Firestore,
+} from 'firebase/firestore'
 import { activityQuery } from '@/data/activity'
 import {
   createTask,
@@ -9,6 +17,7 @@ import {
   updateTaskFields,
   updateTaskStatus,
 } from '@/data/taskWrites'
+import { duplicateInput } from '@/domain/taskCreate'
 import { U, as, resetAndSeed, setupEnv, validTask } from '../rules/helpers'
 
 /** Actividad de las tareas (step-22, D-42) contra el emulador, con las reglas activas. */
@@ -125,6 +134,33 @@ describe('la actividad se escribe con cada cambio (CA-16)', () => {
         { field: 'projectId', from: 'p1', to: 'p2' },
       ]),
     )
+  })
+
+  it('al duplicar se copia lo editable y el alta apunta la original (step-24)', async () => {
+    const db = as(env, U.active)
+    const original = {
+      ...before,
+      key: 'EST-1',
+      description: '- [ ] leer',
+      tagIds: ['uni'],
+      weblinks: [{ url: 'https://example.com', title: 'Apuntes' }],
+      parentId: null,
+    }
+    const { id, key } = await createTask(db, U.active, duplicateInput(original))
+    let copy: Record<string, unknown> | undefined
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const a = ctx.firestore() as unknown as Firestore
+      copy = (await getDoc(doc(a, 'users', U.active, 'tasks', id))).data()
+    })
+    expect(copy).toMatchObject({
+      title: 'Estudiar el tema 1 (copia)',
+      status: 'pending',
+      description: '- [ ] leer',
+      tagIds: ['uni'],
+      estimateMin: 120,
+      spentMin: 0,
+    })
+    expect(await activityOf(id)).toEqual([{ field: 'created', from: 'EST-1', to: key }])
   })
 
   it('sin valores de antes no se apunta nada (escrituras internas)', async () => {

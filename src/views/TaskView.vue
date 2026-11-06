@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft, PanelRightClose, PanelRightOpen, Trash2 } from 'lucide-vue-next'
+import { ArrowLeft, Copy, PanelRightClose, PanelRightOpen, Trash2 } from 'lucide-vue-next'
 import TaskDescription from '@/components/task/TaskDescription.vue'
 import TaskDetailsPanel from '@/components/task/TaskDetailsPanel.vue'
 import TaskRelations from '@/components/task/TaskRelations.vue'
@@ -98,6 +98,23 @@ async function moveProject(projectId: string | null): Promise<void> {
   }
 }
 
+/** Duplicar (step-24, D-52): crea la copia y la abre. */
+const duplicating = ref(false)
+async function duplicate(): Promise<void> {
+  if (!task.value || duplicating.value) return
+  duplicating.value = true
+  const from = task.value.key
+  try {
+    const { key } = await tasksStore.duplicate(task.value)
+    toasts.show(t('tasks.duplicated', { key, from }))
+    await router.push({ name: 'task', params: { taskKey: key } })
+  } catch {
+    toasts.show(t('tasks.duplicateFailed'), 'error')
+  } finally {
+    duplicating.value = false
+  }
+}
+
 const deleting = ref(false)
 const deleteBusy = ref(false)
 async function confirmDelete(): Promise<void> {
@@ -147,6 +164,16 @@ const iconButton =
         <span class="truncate">{{ project.name }}</span>
       </RouterLink>
       <div v-if="shown" class="ml-auto flex items-center gap-1">
+        <button
+          type="button"
+          :class="iconButton"
+          :aria-label="t('tasks.duplicate')"
+          :title="t('tasks.duplicate')"
+          :disabled="duplicating"
+          @click="duplicate"
+        >
+          <Copy class="h-4 w-4" aria-hidden="true" />
+        </button>
         <button
           type="button"
           :class="iconButton"

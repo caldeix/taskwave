@@ -19,6 +19,7 @@ const emit = defineEmits<{
   drop: [task: Task]
   open: [task: Task]
   move: [task: Task, status: TaskStatus]
+  duplicate: [task: Task]
   delete: [task: Task]
 }>()
 
@@ -80,6 +81,7 @@ function onDrop(event: DragEvent): void {
           :project="projectOf(task)"
           @open="emit('open', task)"
           @move="emit('move', task, $event)"
+          @duplicate="emit('duplicate', task)"
           @delete="emit('delete', task)"
         />
       </li>

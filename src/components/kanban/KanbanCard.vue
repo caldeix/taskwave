@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowRight, CalendarClock, Trash2 } from 'lucide-vue-next'
+import { ArrowRight, CalendarClock, Copy, Trash2 } from 'lucide-vue-next'
 import PriorityIcon from '@/components/tasks/PriorityIcon.vue'
 import TagChip from '@/components/tags/TagChip.vue'
 import DropdownMenu, { type MenuItem } from '@/components/ui/DropdownMenu.vue'
@@ -19,7 +19,7 @@ import { useTagsStore } from '@/stores/tags'
  * (step-17), con las atrasadas en coral (D-35). Se arrastra a otra columna o se mueve desde su menú.
  */
 const props = defineProps<{ task: Task; today: DayKey; project?: Project }>()
-const emit = defineEmits<{ open: []; move: [status: TaskStatus]; delete: [] }>()
+const emit = defineEmits<{ open: []; move: [status: TaskStatus]; duplicate: []; delete: [] }>()
 
 const { t, locale } = useI18n()
 const { start, end } = useTaskDrag()
@@ -50,11 +50,13 @@ const menu = computed<MenuItem[]>(() => [
     label: t('kanban.moveTo', { status: t(`status.${s}`) }),
     icon: ArrowRight,
   })),
+  { key: 'duplicate', label: t('tasks.duplicate'), icon: Copy },
   { key: 'delete', label: t('common.delete'), icon: Trash2, danger: true },
 ])
 
 function onMenu(key: string): void {
   if (key === 'delete') emit('delete')
+  else if (key === 'duplicate') emit('duplicate')
   else emit('move', key.slice(5) as TaskStatus)
 }
 </script>

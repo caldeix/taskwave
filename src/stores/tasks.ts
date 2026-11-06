@@ -18,7 +18,7 @@ import { todayKey } from '@/domain/dates'
 import { statusChangePatch } from '@/domain/kanban'
 import { isClosedStatus, type TaskStatus } from '@/domain/status'
 import type { Task, TaskLink } from '@/domain/task'
-import type { NewTaskInput } from '@/domain/taskCreate'
+import { duplicateInput, type NewTaskInput } from '@/domain/taskCreate'
 import type { Entry } from '@/domain/worklog'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from './auth'
@@ -39,6 +39,11 @@ export const useTasksStore = defineStore('tasks', () => {
 
   function create(input: NewTaskInput): Promise<{ id: string; key: string }> {
     return createTask(db, requireUid(), input)
+  }
+
+  /** Duplica una tarea (step-24, D-52); devuelve la nueva con su clave. */
+  function duplicate(task: Task): Promise<{ id: string; key: string }> {
+    return create(duplicateInput(task))
   }
 
   function remove(task: Task): Promise<DeleteSummary> {
@@ -121,6 +126,7 @@ export const useTasksStore = defineStore('tasks', () => {
 
   return {
     create,
+    duplicate,
     remove,
     setDates,
     setStatus,

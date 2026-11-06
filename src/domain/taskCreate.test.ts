@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildNewTask,
+  duplicateInput,
   removeLinksTo,
   taskKey,
   validateNewTask,
   type NewTaskInput,
+  MAX_TITLE,
 } from './taskCreate'
+import { taskFromData } from './task'
 
 const base: NewTaskInput = {
   title: 'Estudiar el tema 3',
@@ -88,5 +91,50 @@ describe('removeLinksTo (D-13)', () => {
       { type: 'caused_by' as const, taskId: 'a' },
     ]
     expect(removeLinksTo(links, 'a')).toEqual([{ type: 'relates', taskId: 'b' }])
+  })
+})
+
+describe('duplicateInput (step-24)', () => {
+  const original = taskFromData('o', {
+    key: 'EST-12',
+    title: 'Estudiar el tema 3',
+    projectId: 'p1',
+    status: 'in_progress',
+    priority: 'high',
+    startDate: '2026-11-05',
+    endDate: '2026-11-07',
+    estimateMin: 120,
+    spentMin: 90,
+    description: '- [ ] leer',
+    tagIds: ['uni'],
+    weblinks: [{ url: 'https://example.com', title: 'Apuntes' }],
+    links: [{ type: 'relates', taskId: 'x' }],
+    parentId: 'padre',
+  })
+
+  it('copia lo editable y deja fuera horas, estado y vínculos', () => {
+    const input = duplicateInput(original)
+    expect(input).toEqual({
+      title: 'Estudiar el tema 3 (copia)',
+      projectId: 'p1',
+      startDate: '2026-11-05',
+      endDate: '2026-11-07',
+      priority: 'high',
+      estimateMin: 120,
+      description: '- [ ] leer',
+      tagIds: ['uni'],
+      weblinks: [{ url: 'https://example.com', title: 'Apuntes' }],
+      parentId: 'padre',
+      copyOf: 'EST-12',
+    })
+    const built = buildNewTask(input, 'EST-13', { servidor: true })
+    expect(built).toMatchObject({ status: 'pending', spentMin: 0, links: [], lastWorkedAt: null })
+    expect(Object.keys(built)).toHaveLength(18) // `copyOf` no se guarda en la tarea
+  })
+
+  it('el título no pasa del máximo', () => {
+    const long = duplicateInput({ ...original, title: 'x'.repeat(MAX_TITLE) })
+    expect(long.title).toHaveLength(MAX_TITLE)
+    expect(long.title.endsWith(' (copia)')).toBe(true)
   })
 })

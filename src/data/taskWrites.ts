@@ -71,7 +71,8 @@ export async function createTask(
     const newKey = taskKey(input.projectId ? String(data.key) : null, next)
     tx.update(counterRef, { [field]: next })
     tx.set(taskRef, buildNewTask(input, newKey, serverTimestamp()))
-    writeActivity(tx, taskRef, [{ field: 'created', from: null, to: newKey }])
+    // Al duplicar, `from` es la clave de la original (step-24).
+    writeActivity(tx, taskRef, [{ field: 'created', from: input.copyOf ?? null, to: newKey }])
     return newKey
   })
   return { id: taskRef.id, key }

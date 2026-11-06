@@ -82,7 +82,9 @@ function value(entry: ActivityEntry, v: ActivityValue): string {
       >
         <template v-if="entry.field === 'created'">
           <span class="font-bold text-gray-800 dark:text-white">{{
-            t('activity.created', { key: entry.to })
+            entry.from
+              ? t('activity.copied', { key: entry.to, from: entry.from })
+              : t('activity.created', { key: entry.to })
           }}</span>
         </template>
         <template v-else>

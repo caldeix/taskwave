@@ -268,6 +268,7 @@ const es = {
     loadFailed: 'No se ha podido cargar la actividad.',
     more: 'Ver cambios anteriores',
     created: 'Tarea creada como {key}',
+    copied: 'Tarea creada como {key} (copia de {from})',
     to: 'pasa a',
     noDate: 'sin fecha',
     noEstimate: 'sin estimado',
@@ -499,6 +500,9 @@ const es = {
     moveFailed: 'No se pudo mover {key}. Vuelve a intentarlo.',
   },
   tasks: {
+    duplicate: 'Duplicar',
+    duplicated: 'Creada {key}, copia de {from}.',
+    duplicateFailed: 'No se ha podido duplicar la tarea. Revisa la conexión.',
     newButton: 'Nueva tarea',
     created: 'Tarea {key} creada.',
     deleted: 'Tarea {key} eliminada.',

@@ -26,6 +26,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   move: [task: Task, status: TaskStatus]
   open: [task: Task]
+  duplicate: [task: Task]
   delete: [task: Task]
   moreClosed: []
 }>()
@@ -50,6 +51,7 @@ const visibleStatuses = computed(() =>
         @drop="emit('move', $event, status)"
         @move="(task, next) => emit('move', task, next)"
         @open="emit('open', $event)"
+        @duplicate="emit('duplicate', $event)"
         @delete="emit('delete', $event)"
       >
         <template v-if="isClosedStatus(status)" #footer>

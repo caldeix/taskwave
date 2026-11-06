@@ -237,6 +237,16 @@ async function moveTask(
   }
 }
 
+/** Duplica desde el menú de la tarjeta (step-24, D-52); la copia aparece en la columna Pendiente. */
+async function duplicateTask(task: Task): Promise<void> {
+  try {
+    const { key } = await tasksStore.duplicate(task)
+    toasts.show(t('tasks.duplicated', { key, from: task.key }))
+  } catch {
+    toasts.show(t('tasks.duplicateFailed'), 'error')
+  }
+}
+
 /** Abre la vista de la tarea (step-14, D-23). */
 function openTask(task: Task): void {
   void router.push({ name: 'task', params: { taskKey: task.key } })
@@ -349,6 +359,7 @@ async function confirmDelete(): Promise<void> {
         :hidden-statuses="filtersStore.filters.hiddenStatuses"
         @move="setStatus"
         @open="openTask"
+        @duplicate="duplicateTask"
         @delete="deleting = $event"
         @more-closed="closedWindow = nextClosedWindow(closedWindow)"
       />

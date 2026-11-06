@@ -1,7 +1,7 @@
 import { isDayKey, type DayKey } from './dates'
 import { INBOX_KEY } from './projects'
 import type { TaskStatus } from './status'
-import type { Priority, TaskLink } from './task'
+import type { Priority, Task, TaskLink } from './task'
 
 /**
  * Alta y borrado de tareas (step-10, D-12, D-13, D-15, D-19, D-51). Lógica pura: la escritura
@@ -22,6 +22,11 @@ export interface NewTaskInput {
   estimateMin?: number | null
   /** Tarea padre, para crear una subtarea (step-16, un solo nivel). */
   parentId?: string | null
+  /** Al duplicar (step-24): lo que se copia de la original y su clave, para la actividad. */
+  description?: string
+  tagIds?: string[]
+  weblinks?: { url: string; title: string }[]
+  copyOf?: string
 }
 
 export type NewTaskErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
@@ -56,7 +61,7 @@ export function buildNewTask(input: NewTaskInput, key: string, serverNow: unknow
     key,
     projectId: input.projectId,
     title: input.title.trim(),
-    description: '',
+    description: input.description ?? '',
     status: input.status ?? 'pending',
     priority: input.priority,
     startDate: input.startDate,
@@ -65,10 +70,10 @@ export function buildNewTask(input: NewTaskInput, key: string, serverNow: unknow
     estimateMin: input.estimateMin ?? null,
     spentMin: 0,
     lastWorkedAt: null,
-    tagIds: [],
+    tagIds: input.tagIds ?? [],
     links: [],
     parentId: input.parentId ?? null,
-    weblinks: [],
+    weblinks: input.weblinks ?? [],
     resolvedAt: null,
     createdAt: serverNow,
     updatedAt: serverNow,
@@ -78,4 +83,41 @@ export function buildNewTask(input: NewTaskInput, key: string, serverNow: unknow
 /** Quita de una lista de vínculos los que apuntan a una tarea (al borrarla, D-13). */
 export function removeLinksTo(links: TaskLink[], taskId: string): TaskLink[] {
   return links.filter((link) => link.taskId !== taskId)
+}
+
+/**
+ * Datos para duplicar una tarea (step-24, D-52): título con «(copia)», mismo proyecto, fechas,
+ * prioridad, estimado, descripción, tags, enlaces y padre. Nace Pendiente y sin horas,
+ * vínculos, comentarios ni actividad, que son de la original.
+ */
+export function duplicateInput(
+  task: Pick<
+    Task,
+    | 'key'
+    | 'title'
+    | 'projectId'
+    | 'startDate'
+    | 'endDate'
+    | 'priority'
+    | 'estimateMin'
+    | 'description'
+    | 'tagIds'
+    | 'weblinks'
+    | 'parentId'
+  >,
+): NewTaskInput {
+  const suffix = ' (copia)'
+  return {
+    title: task.title.slice(0, MAX_TITLE - suffix.length).trimEnd() + suffix,
+    projectId: task.projectId,
+    startDate: task.startDate,
+    endDate: task.endDate,
+    priority: task.priority,
+    estimateMin: task.estimateMin,
+    description: task.description,
+    tagIds: [...task.tagIds],
+    weblinks: task.weblinks.map((w) => ({ ...w })),
+    parentId: task.parentId,
+    copyOf: task.key,
+  }
 }
