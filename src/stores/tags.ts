@@ -2,19 +2,18 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { collection, onSnapshot, type Unsubscribe } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { countTagTasks, createTag, deleteTag, updateTag } from '@/data/tagWrites'
 import type { ProjectColor } from '@/domain/projects'
+import { sortTags, type Tag } from '@/domain/tags'
 import { useAuthStore } from './auth'
+import { useFiltersStore } from './filters'
 import { useProfileStore } from './profile'
 
-export interface Tag {
-  id: string
-  name: string
-  color: ProjectColor
-}
+export type { Tag }
 
 /**
- * Catálogo de tags del usuario (`users/{uid}/tags`, D-40). De momento solo lectura, para los
- * filtros (step-13); crear, renombrar y borrar tags llega en el step-17.
+ * Catálogo de tags del usuario (`users/{uid}/tags`, D-40): se escucha en vivo mientras la cuenta
+ * está activa (filtros, selector y tarjetas) y aquí están sus escrituras (step-17).
  */
 export const useTagsStore = defineStore('tags', () => {
   const authStore = useAuthStore()
@@ -41,11 +40,38 @@ export const useTagsStore = defineStore('tags', () => {
     { immediate: true },
   )
 
-  const sorted = computed(() => [...all.value].sort((a, b) => a.name.localeCompare(b.name, 'es')))
+  const sorted = computed(() => sortTags(all.value))
 
   function byId(id: string): Tag | undefined {
     return all.value.find((t) => t.id === id)
   }
 
-  return { all, sorted, byId }
+  function requireUid(): string {
+    const uid = authStore.user?.uid
+    if (!uid) throw new Error('Sin sesión')
+    return uid
+  }
+
+  function create(tag: { name: string; color: ProjectColor }): Promise<string> {
+    return createTag(db, requireUid(), tag)
+  }
+
+  function update(id: string, changes: Partial<{ name: string; color: ProjectColor }>) {
+    return updateTag(db, requireUid(), id, changes)
+  }
+
+  function countTasks(id: string): Promise<number> {
+    return countTagTasks(db, requireUid(), id)
+  }
+
+  /** Borra el tag de sus tareas y del catálogo, y lo quita también de los filtros guardados. */
+  async function remove(id: string): Promise<number> {
+    const count = await deleteTag(db, requireUid(), id)
+    const filtersStore = useFiltersStore()
+    if (filtersStore.filters.tagIds.includes(id))
+      filtersStore.update({ tagIds: filtersStore.filters.tagIds.filter((t) => t !== id) })
+    return count
+  }
+
+  return { all, sorted, byId, create, update, countTasks, remove }
 })

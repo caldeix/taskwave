@@ -96,6 +96,7 @@ export type EditableTaskFields = Partial<{
   priority: string
   estimateMin: number | null
   weblinks: { url: string; title: string }[]
+  tagIds: string[]
 }>
 
 /** Guarda cambios de campos sueltos con `updatedAt` del servidor (autoguardado, D-46). */
@@ -163,14 +164,14 @@ export interface DeleteSummary {
   timerCleared: boolean
 }
 
-type Op =
+export type Op =
   | { kind: 'delete'; ref: DocumentReference }
   | { kind: 'update'; ref: DocumentReference; data: Record<string, unknown> }
 
 /** Firestore admite como mucho 500 escrituras por lote; se deja margen. */
 const BATCH_SIZE = 450
 
-async function commitInBatches(db: Firestore, ops: Op[]): Promise<void> {
+export async function commitInBatches(db: Firestore, ops: Op[]): Promise<void> {
   for (let i = 0; i < ops.length; i += BATCH_SIZE) {
     const batch = writeBatch(db)
     for (const op of ops.slice(i, i + BATCH_SIZE)) {
