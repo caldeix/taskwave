@@ -17,7 +17,8 @@ export default tseslint.config(
   },
   {
     languageOptions: {
-      globals: { ...globals.browser },
+      // `__APP_VERSION__` lo define Vite (versión de package.json, step-25).
+      globals: { ...globals.browser, __APP_VERSION__: 'readonly' },
     },
   },
   {
