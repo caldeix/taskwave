@@ -2,10 +2,11 @@
 import { Moon, Sun } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import IconButton from './IconButton.vue'
-import { useTheme } from '@/composables/useTheme'
+import { useThemeChoice } from '@/composables/useThemeSync'
 
 const { t } = useI18n()
-const { isDark, toggle } = useTheme()
+// Con sesión, el cambio se guarda en el perfil (step-25); sin sesión, solo en este navegador.
+const { isDark, toggle } = useThemeChoice()
 </script>
 
 <template>

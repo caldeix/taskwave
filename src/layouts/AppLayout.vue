@@ -9,6 +9,7 @@ import TimerDialogs from '@/components/timer/TimerDialogs.vue'
 import TimerPill from '@/components/timer/TimerPill.vue'
 import ToastHost from '@/components/ui/ToastHost.vue'
 import { useShortcuts } from '@/composables/useShortcuts'
+import { useThemeSync } from '@/composables/useThemeSync'
 import { useProfileStore } from '@/stores/profile'
 import { useUiStore } from '@/stores/ui'
 
@@ -23,6 +24,7 @@ const route = useRoute()
 const profileStore = useProfileStore()
 const ui = useUiStore()
 useShortcuts()
+useThemeSync()
 
 const collapsed = computed(() => profileStore.prefs.sidebarCollapsed)
 const drawerOpen = ref(false)

@@ -51,7 +51,8 @@ if (typeof window !== 'undefined' && window.matchMedia) {
  * Modo claro/oscuro con la misma convención que el DS Personal: clase `light` o `dark` en <html>
  * y la elección guardada en localStorage con la clave `theme`. El script de `index.html`
  * aplica la clase antes de pintar para evitar el destello.
- * Más adelante (step-25) la preferencia se sincronizará también en `users/{uid}.prefs.theme`.
+ * Con sesión, la elección se guarda también en `users/{uid}.prefs.theme` y se aplica en todos
+ * los dispositivos (step-25, `useThemeSync`).
  */
 export function useTheme() {
   function setMode(next: ThemeMode): void {
