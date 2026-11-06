@@ -50,7 +50,7 @@ export const useTasksStore = defineStore('tasks', () => {
     task: Task,
     dates: { startDate: string | null; endDate: string | null },
   ): Promise<void> {
-    return updateTaskDates(db, requireUid(), task.id, dates)
+    return updateTaskDates(db, requireUid(), task.id, dates, task)
   }
 
   /** Cambia el estado con los automatismos de D-17 (no hace nada si no cambia). */
@@ -60,12 +60,18 @@ export const useTasksStore = defineStore('tasks', () => {
     const timer = useTimerStore()
     if (isClosedStatus(status) && timer.isRunningOn(task.id) && !(await timer.confirmStop()))
       throw new Error('timer-stop-failed')
-    await updateTaskStatus(db, requireUid(), task.id, statusChangePatch(task, status, todayKey()))
+    await updateTaskStatus(
+      db,
+      requireUid(),
+      task.id,
+      statusChangePatch(task, status, todayKey()),
+      task,
+    )
   }
 
   /** Autoguardado de campos sueltos desde la vista de tarea (D-46). */
   function updateFields(task: Task, fields: EditableTaskFields): Promise<void> {
-    return updateTaskFields(db, requireUid(), task.id, fields)
+    return updateTaskFields(db, requireUid(), task.id, fields, task)
   }
 
   /** Mueve la tarea a otro proyecto (o a la bandeja); devuelve su nueva clave (D-12). */

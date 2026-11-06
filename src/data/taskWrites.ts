@@ -16,9 +16,31 @@ import {
 } from 'firebase/firestore'
 import { buildNewTask, removeLinksTo, taskKey, type NewTaskInput } from '@/domain/taskCreate'
 import type { StatusPatch } from '@/domain/kanban'
+import { activityChanges, type ActivityChange } from '@/domain/activity'
 import { inverseLink } from '@/domain/links'
 import type { Task, TaskLink } from '@/domain/task'
 import { tasksCollection } from './taskQueries'
+
+/**
+ * Apunta la actividad (step-22, D-42) en el mismo lote o transacción que el cambio, con la hora
+ * del servidor (las reglas lo exigen).
+ */
+function writeActivity(
+  writer: { set: (ref: DocumentReference, data: Record<string, unknown>) => unknown },
+  taskRef: DocumentReference,
+  changes: ActivityChange[],
+): void {
+  for (const change of changes)
+    writer.set(doc(collection(taskRef, 'activity')), { ...change, at: serverTimestamp() })
+}
+
+/** Valores de antes de un cambio, para la actividad. */
+export type TaskBefore = Partial<
+  Pick<
+    Task,
+    'status' | 'startDate' | 'endDate' | 'estimateMin' | 'priority' | 'projectId' | 'title'
+  >
+>
 
 /**
  * Altas y bajas de tareas (step-10). Reciben la instancia de Firestore para poder probarlas
@@ -49,6 +71,7 @@ export async function createTask(
     const newKey = taskKey(input.projectId ? String(data.key) : null, next)
     tx.update(counterRef, { [field]: next })
     tx.set(taskRef, buildNewTask(input, newKey, serverTimestamp()))
+    writeActivity(tx, taskRef, [{ field: 'created', from: null, to: newKey }])
     return newKey
   })
   return { id: taskRef.id, key }
@@ -63,12 +86,17 @@ export async function updateTaskDates(
   uid: string,
   taskId: string,
   dates: { startDate: string | null; endDate: string | null },
+  before?: TaskBefore,
 ): Promise<void> {
-  await updateDoc(doc(tasksCollection(db, uid), taskId), {
+  const ref = doc(tasksCollection(db, uid), taskId)
+  const batch = writeBatch(db)
+  batch.update(ref, {
     startDate: dates.startDate,
     endDate: dates.endDate,
     updatedAt: serverTimestamp(),
   })
+  if (before) writeActivity(batch, ref, activityChanges(before, dates))
+  await batch.commit()
 }
 
 /**
@@ -80,13 +108,24 @@ export async function updateTaskStatus(
   uid: string,
   taskId: string,
   patch: StatusPatch,
+  before?: TaskBefore,
 ): Promise<void> {
   const data: Record<string, unknown> = { status: patch.status, updatedAt: serverTimestamp() }
   if (patch.resolvedAt === 'now') data.resolvedAt = serverTimestamp()
   else if (patch.resolvedAt === null) data.resolvedAt = null
   if (patch.startDate !== undefined) data.startDate = patch.startDate
   if (patch.endDate !== undefined) data.endDate = patch.endDate
-  await updateDoc(doc(tasksCollection(db, uid), taskId), data)
+  const ref = doc(tasksCollection(db, uid), taskId)
+  const batch = writeBatch(db)
+  batch.update(ref, data)
+  if (before) {
+    const { status, startDate, endDate } = data
+    const tracked: Record<string, unknown> = { status }
+    if ('startDate' in data) tracked.startDate = startDate
+    if ('endDate' in data) tracked.endDate = endDate
+    writeActivity(batch, ref, activityChanges(before, tracked))
+  }
+  await batch.commit()
 }
 
 /** Campos que se editan directamente desde la vista de tarea (step-14). */
@@ -99,17 +138,22 @@ export type EditableTaskFields = Partial<{
   tagIds: string[]
 }>
 
-/** Guarda cambios de campos sueltos con `updatedAt` del servidor (autoguardado, D-46). */
+/**
+ * Guarda cambios de campos sueltos con `updatedAt` del servidor (autoguardado, D-46). Con
+ * `before`, apunta en la actividad los campos vigilados que cambian (título, prioridad, estimado).
+ */
 export async function updateTaskFields(
   db: Firestore,
   uid: string,
   taskId: string,
   fields: EditableTaskFields,
+  before?: TaskBefore,
 ): Promise<void> {
-  await updateDoc(doc(tasksCollection(db, uid), taskId), {
-    ...fields,
-    updatedAt: serverTimestamp(),
-  })
+  const ref = doc(tasksCollection(db, uid), taskId)
+  const batch = writeBatch(db)
+  batch.update(ref, { ...fields, updatedAt: serverTimestamp() })
+  if (before) writeActivity(batch, ref, activityChanges(before, fields))
+  await batch.commit()
 }
 
 /**
@@ -138,6 +182,7 @@ export async function moveTaskToProject(
     const key = taskKey(targetProjectId ? String(data.key) : null, next)
     tx.update(counterRef, { [field]: next })
     tx.update(taskRef, { projectId: targetProjectId, key, updatedAt: serverTimestamp() })
+    writeActivity(tx, taskRef, [{ field: 'projectId', from: task.projectId, to: targetProjectId }])
     return key
   })
 
