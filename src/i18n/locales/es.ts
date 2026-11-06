@@ -545,6 +545,8 @@ const es = {
     moveFailed: 'No se pudo cambiar el estado de {key}. Vuelve a intentarlo.',
   },
   calendar: {
+    agendaEmpty: 'No hay tareas con fecha este mes.',
+    agendaNoTasks: 'Sin tareas; solo horas registradas.',
     hoursLogged: '{hours} registradas este día',
     today: 'Hoy',
     prev: 'Mes anterior',

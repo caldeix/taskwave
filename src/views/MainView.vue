@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Inbox, Layers, Plus } from 'lucide-vue-next'
+import AgendaList from '@/components/calendar/AgendaList.vue'
 import MonthCalendar from '@/components/calendar/MonthCalendar.vue'
 import UndatedPanel from '@/components/calendar/UndatedPanel.vue'
 import ViewSwitch from '@/components/layout/ViewSwitch.vue'
@@ -15,6 +16,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useLiveTasks } from '@/composables/useLiveTasks'
 import { useLiveWorklogs } from '@/composables/useLiveWorklogs'
+import { useMediaQuery } from '@/composables/useMediaQuery'
 import { closedSinceQuery, openQuery, rangeQueries, undatedQuery } from '@/data/taskQueries'
 import { CLOSED_WINDOWS, closedSinceMs, nextClosedWindow, type ClosedWindow } from '@/domain/kanban'
 import type { TaskStatus } from '@/domain/status'
@@ -93,6 +95,9 @@ const scopeKey = computed(() => JSON.stringify(taskScope.value))
 /** Mes del calendario en la URL (`?mes=2026-11`); por defecto, el actual. */
 const month = computed(() => parseMonthParam(route.query.mes))
 const visibleRange = computed(() => gridRange(monthGrid(month.value)))
+
+/** En el móvil, la agenda sustituye a la rejilla del mes (step-26, D-24). */
+const isNarrow = useMediaQuery('(max-width: 767px)')
 
 // Horas registradas de cada día del calendario, en el ámbito de la vista (step-24, D-52).
 const gridLogs = useLiveWorklogs(() =>
@@ -332,7 +337,19 @@ async function confirmDelete(): Promise<void> {
         v-if="view === 'calendar'"
         class="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_17rem]"
       >
+        <AgendaList
+          v-if="isNarrow"
+          :month="month"
+          :tasks="calendarTasks"
+          :today="today"
+          :minutes-by-day="hoursByDay"
+          @open-task="openTask"
+          @open-new="(day) => (newTask = { startDate: day, title: '' })"
+          @change-month="changeMonth"
+          @go-today="goToday"
+        />
         <MonthCalendar
+          v-else
           :month="month"
           :tasks="calendarTasks"
           :today="today"
