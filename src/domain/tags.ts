@@ -1,4 +1,5 @@
 import { PROJECT_COLORS, type ProjectColor } from './projects'
+import { fold } from './text'
 
 /**
  * Catálogo de tags con color (step-17, D-40). Las tareas guardan solo los ids (`tagIds`), así
@@ -27,7 +28,7 @@ export function normalizeTagName(name: string): string {
 
 /** Para comparar sin mayúsculas ni tildes. */
 export function foldTagName(name: string): string {
-  return normalizeTagName(name).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  return fold(normalizeTagName(name))
 }
 
 export type TagNameError = 'required' | 'tooLong' | 'duplicate'

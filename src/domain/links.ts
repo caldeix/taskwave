@@ -1,4 +1,5 @@
 import { isClosedStatus } from './status'
+import { fold } from './text'
 import { LINK_TYPES, type LinkType, type Task, type TaskLink } from './task'
 
 /**
@@ -129,10 +130,6 @@ export function subtaskTotals(parent: Task, subtasks: Task[]): SubtaskTotals {
 export function parseTaskKey(text: string): string | null {
   const key = text.trim().toUpperCase()
   return /^[A-Z][A-Z0-9]{1,5}-[0-9]{1,7}$/.test(key) ? key : null
-}
-
-function fold(text: string): string {
-  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 }
 
 /**
