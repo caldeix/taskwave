@@ -7,6 +7,7 @@ import {
   ArchiveRestore,
   ArrowDown,
   ArrowUp,
+  ChartColumn,
   ChevronDown,
   ChevronRight,
   Inbox,
@@ -219,6 +220,9 @@ const iconButton =
         :collapsed="props.collapsed"
       >
         <template #icon><Inbox class="h-5 w-5" /></template>
+      </SidebarLink>
+      <SidebarLink :to="{ name: 'stats' }" :label="t('nav.stats')" :collapsed="props.collapsed">
+        <template #icon><ChartColumn class="h-5 w-5" /></template>
       </SidebarLink>
     </div>
 
