@@ -78,7 +78,10 @@ export const useProfileStore = defineStore('profile', () => {
     unsubscribe = onSnapshot(
       ref,
       (snap) => {
-        profile.value = snap.exists() ? (snap.data() as UserProfile) : null
+        // `estimate`: un cronómetro recién iniciado muestra la hora local hasta que confirma el servidor.
+        profile.value = snap.exists()
+          ? (snap.data({ serverTimestamps: 'estimate' }) as UserProfile)
+          : null
         error.value = null
         markLoaded(uid)
       },

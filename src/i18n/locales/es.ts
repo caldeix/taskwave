@@ -185,6 +185,36 @@ const es = {
       cancel: 'Seguir escribiendo',
     },
   },
+  timer: {
+    start: 'Iniciar',
+    stop: 'Parar',
+    startLabel: 'Iniciar el cronómetro en {key}',
+    stopLabel: 'Parar el cronómetro de {key} ({clock})',
+    closedHint: 'Reabre la tarea para cronometrarla.',
+    running: 'Cronómetro en marcha',
+    runningOn: 'Cronómetro en {key}: {clock}. Pulsa para ir a la tarea.',
+    logged:
+      'Registradas {hours} en {key}. | Registradas {hours} en {key}, en {n} días (pasó de medianoche).',
+    nothingLogged: 'Menos de un minuto: no se ha registrado nada.',
+    failed: 'No se ha podido guardar el cronómetro. Revisa la conexión.',
+    warning: 'El cronómetro lleva más de {hours} h. ¿Te has olvidado de pararlo?',
+    switch: {
+      title: '¿Cambiar de tarea?',
+      message:
+        'El cronómetro está en {current} ({clock}). Se parará y se guardarán sus horas, y empezará en {next}.',
+      confirm: 'Parar y cambiar',
+    },
+    forgotten: {
+      title: '¿Hasta cuándo trabajaste?',
+      message:
+        'El cronómetro de {key} lleva {clock}. Si te olvidaste de pararlo, indica la hora a la que terminaste.',
+      endLabel: 'Hora de fin',
+      saveAt: 'Guardar hasta esa hora',
+      saveNow: 'Guardar hasta ahora',
+      beforeStart: 'Tiene que ser después del inicio ({start}).',
+      inFuture: 'No puede ser una hora futura.',
+    },
+  },
   nav: {
     menu: 'Menú',
     openMenu: 'Abrir el menú',
