@@ -69,7 +69,7 @@ function toggle(): void {
       >
         {{ t('started.empty') }}
       </p>
-      <ul v-else class="m-0 flex list-none gap-3 overflow-x-auto p-0 pb-2">
+      <ul v-else class="relative m-0 flex list-none gap-3 overflow-x-auto p-0 pb-2">
         <li v-for="task in started" :key="task.id" class="w-56 shrink-0">
           <RouterLink
             :to="{ name: 'task', params: { taskKey: task.key } }"

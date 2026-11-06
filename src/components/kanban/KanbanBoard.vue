@@ -39,7 +39,7 @@ const visibleStatuses = computed(() =>
 </script>
 
 <template>
-  <div class="-mx-4 overflow-x-auto px-4 pb-2 md:-mx-8 md:px-8">
+  <div class="relative -mx-4 overflow-x-auto px-4 pb-2 md:-mx-8 md:px-8">
     <div class="flex min-w-max items-start gap-4">
       <KanbanColumn
         v-for="status in visibleStatuses"
