@@ -4,7 +4,7 @@ import { useId } from 'vue'
 /** Campo de texto del DS Personal, con etiqueta, ayuda y mensaje de error. */
 defineProps<{
   label: string
-  type?: 'text' | 'email' | 'password' | 'date'
+  type?: 'text' | 'email' | 'password' | 'date' | 'time'
   autocomplete?: string
   placeholder?: string
   help?: string
