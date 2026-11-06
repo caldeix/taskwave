@@ -2,12 +2,13 @@
 import { nextTick, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TaskComments from '@/components/comments/TaskComments.vue'
+import TaskWorklog from '@/components/worklog/TaskWorklog.vue'
 import type { Task } from '@/domain/task'
 
 /**
  * Pestañas de la vista de tarea: Comentarios (por defecto), Registro de horas y Actividad.
  * Pestañas accesibles (flechas, Inicio y Fin); solo se monta la elegida, así que solo se leen
- * sus datos. El registro de horas llega en el step-20 y la actividad en el step-22.
+ * sus datos. La actividad llega en el step-22.
  */
 defineProps<{ task: Task }>()
 
@@ -74,12 +75,7 @@ function onKeydown(event: KeyboardEvent): void {
 
     <div :id="`${id}-panel-${selected}`" role="tabpanel" :aria-labelledby="`${id}-tab-${selected}`">
       <TaskComments v-if="selected === 'comments'" :task="task" />
-      <p
-        v-else-if="selected === 'worklog'"
-        class="m-0 font-text text-sm text-gray-500 dark:text-gray-400"
-      >
-        {{ t('taskView.worklogSoon') }}
-      </p>
+      <TaskWorklog v-else-if="selected === 'worklog'" :task="task" />
       <p v-else class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
         {{ t('taskView.activitySoon') }}
       </p>
