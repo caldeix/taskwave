@@ -90,7 +90,8 @@ describe('startTimer (D-25, D-26)', () => {
 
 describe('stopTimer (D-27, D-28)', () => {
   it('crea el registro, suma las horas a la tarea y quita el cronómetro', async () => {
-    const end = new Date()
+    // Hora fija a mediodía: con «ahora», cerca de medianoche saldrían dos registros.
+    const end = new Date(2026, 10, 5, 12, 0)
     await runningSince('T', new Date(end.getTime() - 90 * 60_000))
     const result = await stopTimer(as(env, U.active), U.active, end.getTime())
     expect(result).toEqual({ taskId: 'T', minutes: 90, worklogs: 1 })
