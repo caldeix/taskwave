@@ -17,6 +17,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
+  Settings,
   Pencil,
   Plus,
   Trash2,
@@ -347,8 +348,15 @@ const iconButton =
       </template>
     </div>
 
-    <!-- Pie: admin, sistema de diseño (solo en desarrollo), tema y sesión -->
+    <!-- Pie: ajustes, admin, sistema de diseño (solo en desarrollo), tema y sesión -->
     <div class="flex flex-col gap-1 border-t border-gray-200 pt-3 dark:border-gray-700">
+      <SidebarLink
+        :to="{ name: 'settings' }"
+        :label="t('nav.settings')"
+        :collapsed="props.collapsed"
+      >
+        <template #icon><Settings class="h-5 w-5" /></template>
+      </SidebarLink>
       <SidebarLink
         v-if="profileStore.isAdmin"
         :to="{ name: 'admin-users' }"

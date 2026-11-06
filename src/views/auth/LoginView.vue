@@ -53,6 +53,9 @@ async function google(): Promise<void> {
         required
       />
       <FormMessage v-if="errorKey" tone="error">{{ t(errorKey) }}</FormMessage>
+      <FormMessage v-else-if="route.query.baja" tone="success">{{
+        t('auth.accountDeleted')
+      }}</FormMessage>
       <BaseButton type="submit" block :disabled="busy || !email || !password">
         {{ t('auth.login.submit') }}
       </BaseButton>

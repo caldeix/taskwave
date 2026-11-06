@@ -137,5 +137,24 @@ export const useProfileStore = defineStore('profile', () => {
     if (Object.keys(changes).length > 0) await updateDoc(doc(db, 'users', uid), changes)
   }
 
-  return { profile, status, isAdmin, error, loadedFor, prefs, whenLoaded, retry, updatePrefs }
+  /** Cambia el nombre visible (Ajustes, step-25). */
+  async function updateDisplayName(displayName: string): Promise<void> {
+    const uid = authStore.user?.uid
+    if (!uid || profile.value?.status !== 'active') return
+    if (profile.value.displayName !== displayName)
+      await updateDoc(doc(db, 'users', uid), { displayName })
+  }
+
+  return {
+    profile,
+    status,
+    isAdmin,
+    error,
+    loadedFor,
+    prefs,
+    whenLoaded,
+    retry,
+    updatePrefs,
+    updateDisplayName,
+  }
 })

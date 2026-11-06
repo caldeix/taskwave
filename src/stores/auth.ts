@@ -1,9 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import {
+  EmailAuthProvider,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  deleteUser,
   onAuthStateChanged,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -14,7 +18,8 @@ import {
   type ActionCodeSettings,
   type User,
 } from 'firebase/auth'
-import { auth, clearLocalData } from '@/lib/firebase'
+import { deleteAccountData } from '@/data/account'
+import { auth, clearLocalData, db } from '@/lib/firebase'
 import { isUserNotFound, needsEmailVerification } from '@/domain/auth'
 
 // Los correos de Firebase (verificación y recuperación) salen en español.
@@ -100,6 +105,39 @@ export const useAuthStore = defineStore('auth', () => {
    * Cierra la sesión, borra la caché local de Firestore (privacidad en equipos compartidos) y
    * recarga en el login, porque Firestore queda inutilizable tras borrar su caché.
    */
+  /** ¿Entra con contraseña? (si no, con Google). Para pedir la confirmación adecuada. */
+  const usesPassword = computed(
+    () => user.value?.providerData.some((p) => p.providerId === 'password') ?? false,
+  )
+
+  /**
+   * Vuelve a pedir la identidad antes de algo delicado (la baja, P-9): Firebase exige un inicio
+   * de sesión reciente para `deleteUser`. Con contraseña o con la ventana de Google.
+   */
+  async function reauthenticate(password?: string): Promise<void> {
+    const current = auth.currentUser
+    if (!current) throw new Error('Sin sesión')
+    if (usesPassword.value)
+      await reauthenticateWithCredential(
+        current,
+        EmailAuthProvider.credential(current.email ?? '', password ?? ''),
+      )
+    else await reauthenticateWithPopup(current, new GoogleAuthProvider())
+  }
+
+  /**
+   * Baja de la cuenta (step-25, P-9): borra todos los datos (el perfil el último), después la
+   * cuenta de Auth y la caché local, y vuelve al login. Llamar después de `reauthenticate`.
+   */
+  async function deleteAccount(): Promise<void> {
+    const current = auth.currentUser
+    if (!current) throw new Error('Sin sesión')
+    await deleteAccountData(db, current.uid)
+    await deleteUser(current)
+    await clearLocalData()
+    window.location.replace(`${import.meta.env.BASE_URL}login?baja=1`)
+  }
+
   async function logout(): Promise<void> {
     await signOut(auth)
     await clearLocalData()
@@ -120,5 +158,8 @@ export const useAuthStore = defineStore('auth', () => {
     resendVerification,
     refreshUser,
     logout,
+    usesPassword,
+    reauthenticate,
+    deleteAccount,
   }
 })
