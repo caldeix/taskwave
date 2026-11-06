@@ -22,6 +22,7 @@ import {
   X,
 } from 'lucide-vue-next'
 import SidebarLink from './SidebarLink.vue'
+import TimerPill from '@/components/timer/TimerPill.vue'
 import ProjectFormDialog from '@/components/projects/ProjectFormDialog.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
@@ -199,6 +200,9 @@ const iconButton =
         <PanelLeftClose v-else class="h-5 w-5" aria-hidden="true" />
       </button>
     </div>
+
+    <!-- Cronómetro en marcha (step-19); en móvil ya está en la cabecera -->
+    <TimerPill v-if="!props.mobile" :compact="props.collapsed" />
 
     <!-- Vistas generales -->
     <div class="flex flex-col gap-1">

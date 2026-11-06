@@ -7,6 +7,7 @@ import type { SubtaskTotals } from '@/domain/links'
 import StatusSelect from './StatusSelect.vue'
 import TagPicker from '@/components/tags/TagPicker.vue'
 import TagsDialog from '@/components/tags/TagsDialog.vue'
+import TimerButton from '@/components/timer/TimerButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
 import FormMessage from '@/components/ui/FormMessage.vue'
@@ -21,8 +22,8 @@ import { useTasksStore } from '@/stores/tasks'
 import { useToastsStore } from '@/stores/toasts'
 
 /**
- * Panel derecho de la vista de tarea (step-14): estado, prioridad, proyecto, fechas, estimado,
- * horas, enlaces y fechas de alta. Cada campo se guarda solo al cambiarlo (D-46).
+ * Panel derecho de la vista de tarea (step-14): estado, cronómetro (step-19), prioridad, proyecto,
+ * fechas, estimado, horas, tags, enlaces y fechas de alta. Cada campo se guarda solo al cambiarlo (D-46).
  */
 const props = defineProps<{ task: Task; totals?: SubtaskTotals | null }>()
 const emit = defineEmits<{ moveProject: [projectId: string | null] }>()
@@ -173,6 +174,9 @@ const label =
       <span :class="label">{{ t('taskView.status') }}</span>
       <StatusSelect :status="task.status" :disabled="saving" @change="setStatus" />
     </div>
+
+    <!-- Cronómetro (step-19) -->
+    <TimerButton :task="task" />
 
     <BaseSelect
       :model-value="task.priority"

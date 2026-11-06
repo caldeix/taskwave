@@ -4,12 +4,15 @@ import { RouterView, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Menu } from 'lucide-vue-next'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
+import TimerDialogs from '@/components/timer/TimerDialogs.vue'
+import TimerPill from '@/components/timer/TimerPill.vue'
 import ToastHost from '@/components/ui/ToastHost.vue'
 import { useProfileStore } from '@/stores/profile'
 
 /**
  * Estructura de la app (step-8): menú lateral plegable a la izquierda (guardado en
  * `prefs.sidebarCollapsed`) y el contenido a la derecha. En móvil el menú es un cajón (D-49).
+ * El mini cronómetro (step-19) va en el menú y, en móvil, en la cabecera.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -71,10 +74,12 @@ function onKeydown(event: KeyboardEvent): void {
         >
           {{ t('app.name') }}
         </span>
+        <TimerPill class="ml-auto" compact />
       </header>
       <RouterView />
     </div>
 
+    <TimerDialogs />
     <ToastHost />
   </div>
 </template>
