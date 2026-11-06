@@ -45,6 +45,8 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Ajustes (`/ajustes`, en el menú): nombre, horas de una jornada (el «1d»), aviso del cronómetro olvidado, tema (claro, oscuro o el del sistema) y datos de la cuenta con la versión de la app.
 - El tema se guarda en la cuenta y se aplica en todos los dispositivos; el botón del menú también lo guarda.
 - Baja de la cuenta desde Ajustes: hay que escribir BORRAR y volver a identificarse (contraseña o Google); se borran todas las tareas con sus comentarios y actividad, las horas, los proyectos, los tags, el perfil y la cuenta de acceso, y se vuelve al login con un aviso. Un usuario bloqueado no puede darse de baja.
+- En el móvil (menos de 768 px), el calendario se ve como una agenda del mes: los días con tareas u horas (y hoy), cada uno con sus tareas, sus horas y un «+» para crear una tarea ese día.
+- TaskWave se puede instalar como app (PWA): abre sin conexión con lo último que se vio, avisa la primera vez que queda lista para usarse sin red y, cuando hay una versión nueva, muestra «Hay una versión nueva» con «Recargar» (no se cambia sola).
 - Duraciones al estilo Jira (`1d 2h 30m`, con 1d = jornada configurada).
 - Barra de filtros: ojo de estados visibles (oculta columnas del kanban y barras del calendario), periodo (hoy, esta semana, este mes, este año; entran las tareas que tocan el periodo), orden (por fecha fin o inicio, por inicio o por fin, en los dos sentidos), tags (cualquiera o todos), prioridad, «Atrasadas» y «Sin fecha», con «Quitar filtros». En el calendario el periodo es el mes visible, así que el periodo, el orden y «Sin fecha» solo salen en el kanban.
 - Los filtros se guardan en las preferencias del usuario (los mismos en todos los proyectos y dispositivos), juntando los cambios seguidos en una sola escritura.
@@ -75,3 +77,7 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 - Reglas de Firestore para los datos de cada usuario (proyectos, tareas, comentarios, actividad, registro de horas y tags): solo el dueño con la cuenta activa y el correo verificado; el admin no tiene acceso. Cada documento se valida entero: campos permitidos, tipos, enumerados, tamaños máximos, fechas `AAAA-MM-DD`, marcas de tiempo del servidor y fecha fin no anterior al inicio.
 - 54 tests de reglas con `@firebase/rules-unit-testing` (`npm run test:rules`), en su propio proyecto `demo-taskwave-rules`.
 - Reglas de Firestore del perfil: cada usuario lee el suyo; solo el admin lista los perfiles y cambia el estado de otros; nadie puede darse admin ni cambiarse el estado; un usuario bloqueado no puede borrar su perfil.
+
+### Corregido
+
+- El kanban hacía la página más ancha que la pantalla en tablet y móvil (textos para lectores de pantalla de las tarjetas fuera de la vista).
