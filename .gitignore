@@ -3,7 +3,13 @@ dist/
 dist-emu/
 coverage/
 *.local
-.env.*.local
+
+# Configuración local: no se versiona (hay plantillas *.example)
+.env
+.env.*
+!.env.example
+!.env.emulator.example
+.firebaserc
 *.tsbuildinfo
 
 # Firebase
@@ -19,5 +25,5 @@ ui-debug.log*
 .DS_Store
 Thumbs.db
 
-# Claude Code (ajustes locales)
-.claude/settings.local.json
+# Herramientas locales del editor y asistentes
+.claude/
