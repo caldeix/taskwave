@@ -39,3 +39,14 @@ Requiere Java 21 o superior (Temurin 21 instalado con `winget install EclipseAdo
 3. `npm run dev:emu`: la app usa `.env.emulator` (copiado de `.env.emulator.example`), con el proyecto `demo-taskwave`, que no existe en Google. Nada sale del equipo ni gasta cuota.
 
 Los emuladores no guardan datos al cerrarse: se vuelve a ejecutar `npm run seed` cada vez.
+
+## Publicación
+
+Cada push a `main` lanza el workflow [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml): lint, formato, tests unitarios, tests de reglas con el emulador y build; si todo pasa, publica `dist/` en GitHub Pages (`https://caldeix.github.io/taskwave/`). También se puede lanzar a mano desde la pestaña Actions.
+
+- **Secretos del repositorio** (Settings > Secrets and variables > Actions): los mismos nombres que `.env` (`VITE_FIREBASE_*` y `VITE_APPCHECK_SITE_KEY`). Se pueden subir desde el `.env` local con `gh secret set -f .env`.
+- **GitHub Pages** con origen «GitHub Actions» (Settings > Pages).
+- **Rutas profundas:** la build copia `index.html` como `404.html`, que Pages sirve para cualquier ruta que no existe; la app carga y el router muestra la ruta pedida.
+- **CSP:** en producción la build añade un `<meta http-equiv="Content-Security-Policy">` con el hash de los scripts en línea (`src/lib/csp.ts`). No se añade con los emuladores.
+- **Reglas e índices de Firestore:** se despliegan a mano (no se guarda ningún token de Firebase en GitHub): `npx firebase login` una vez y después `npx firebase deploy --only firestore`.
+- **App Check:** clave de sitio de reCAPTCHA v3 en `VITE_APPCHECK_SITE_KEY` (y en el secreto). En desarrollo se usa un token de depuración registrado en la consola de Firebase.
