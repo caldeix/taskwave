@@ -2,7 +2,7 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [1.0.0] - 2026-11-07
 
 ### Añadido
 
