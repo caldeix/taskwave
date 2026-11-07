@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app'
+import { ReCaptchaV3Provider, initializeAppCheck } from 'firebase/app-check'
 import { connectAuthEmulator, getAuth } from 'firebase/auth'
 import {
   clearIndexedDbPersistence,
@@ -25,6 +26,25 @@ export const firebaseApp = initializeApp({
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 })
+
+/**
+ * App Check (step-27, D-3): cada petición a Firebase lleva un token que demuestra que sale de
+ * esta web (reCAPTCHA v3), así que las llamadas desde scripts u otras webs se rechazan cuando
+ * se activa la obligatoriedad en la consola. Va antes que Auth y Firestore.
+ * - Sin clave (`VITE_APPCHECK_SITE_KEY` vacía) o con los emuladores, no se activa.
+ * - En desarrollo usa un token de depuración (se registra en la consola de Firebase):
+ *   `VITE_APPCHECK_DEBUG_TOKEN` o, si no hay, uno que el SDK muestra en la consola del navegador.
+ */
+const appCheckSiteKey = import.meta.env.VITE_APPCHECK_SITE_KEY
+if (!usingEmulators && appCheckSiteKey) {
+  if (import.meta.env.DEV)
+    (self as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
+      import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
+  initializeAppCheck(firebaseApp, {
+    provider: new ReCaptchaV3Provider(appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true,
+  })
+}
 
 export const auth = getAuth(firebaseApp)
 

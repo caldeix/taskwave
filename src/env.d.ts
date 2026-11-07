@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string
   readonly VITE_FIREBASE_APP_ID: string
   readonly VITE_APPCHECK_SITE_KEY: string
+  /** Token de depuración de App Check para desarrollo (opcional). */
+  readonly VITE_APPCHECK_DEBUG_TOKEN?: string
   /** `true` en modo emulador (`.env.emulator`). */
   readonly VITE_USE_EMULATORS?: string
   readonly VITE_EMULATOR_HOST?: string
