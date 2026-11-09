@@ -1,3 +1,4 @@
+import type { MainView } from './views'
 /**
  * Perfil de usuario en `users/{uid}` (apartado «Impacto en BD» del plan, D-2).
  * El estado y el flag de admin solo los cambian el admin (estado) o la consola de Firebase
@@ -11,7 +12,7 @@ export type ThemePref = 'light' | 'dark' | 'system'
 
 export interface UserPrefs {
   theme: ThemePref
-  view: 'calendar' | 'kanban'
+  view: MainView
   sidebarCollapsed: boolean
   /** Franja de tareas iniciadas plegada (step-21, D-34). */
   startedCollapsed: boolean

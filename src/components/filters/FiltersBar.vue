@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { MainView } from '@/domain/views'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -26,7 +27,7 @@ import { useTagsStore } from '@/stores/tags'
  * Barra de filtros de la vista principal (step-13). En el calendario el periodo lo marca el mes
  * visible y el orden no aplica, así que esos controles solo salen en el kanban (D-39).
  */
-const props = defineProps<{ view: 'calendar' | 'kanban' }>()
+const props = defineProps<{ view: MainView }>()
 
 const { t } = useI18n()
 const store = useFiltersStore()
@@ -35,7 +36,8 @@ const tagsDialogOpen = ref(false)
 
 const f = computed(() => store.filters)
 const visibleStatuses = computed(() => TASK_STATUSES.length - f.value.hiddenStatuses.length)
-const isKanban = computed(() => props.view === 'kanban')
+// El periodo y el orden valen en el kanban y en la lista (v1.1.0); no en el calendario ni el backlog.
+const isKanban = computed(() => props.view === 'kanban' || props.view === 'list')
 
 const checkbox =
   'h-4 w-4 cursor-pointer accent-blue-500 focus-visible:outline-2 focus-visible:outline-blue-600'

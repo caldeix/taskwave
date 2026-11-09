@@ -1,31 +1,33 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { CalendarDays, Columns3 } from 'lucide-vue-next'
+import { CalendarDays, Columns3, List, ListOrdered } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
+import type { MainView } from '@/domain/views'
 
-/** Selector de vista principal: calendario mensual o kanban. */
-defineProps<{ modelValue: 'calendar' | 'kanban' }>()
-const emit = defineEmits<{ 'update:modelValue': [value: 'calendar' | 'kanban'] }>()
+/** Selector de vista principal: calendario, kanban, lista (v1.1.0) y backlog (v1.1.0). */
+defineProps<{ modelValue: MainView }>()
+const emit = defineEmits<{ 'update:modelValue': [value: MainView] }>()
 const { t } = useI18n()
+
+const VIEWS = [
+  { id: 'calendar', icon: CalendarDays },
+  { id: 'kanban', icon: Columns3 },
+  { id: 'list', icon: List },
+  { id: 'backlog', icon: ListOrdered },
+] as const
 </script>
 
 <template>
-  <div class="flex gap-2" role="group" :aria-label="t('views.label')">
+  <div class="flex flex-wrap gap-2" role="group" :aria-label="t('views.label')">
     <BaseButton
+      v-for="view in VIEWS"
+      :key="view.id"
       variant="secondary"
-      :selected="modelValue === 'calendar'"
-      @click="emit('update:modelValue', 'calendar')"
+      :selected="modelValue === view.id"
+      @click="emit('update:modelValue', view.id)"
     >
-      <CalendarDays class="h-4 w-4" aria-hidden="true" />
-      {{ t('views.calendar') }}
-    </BaseButton>
-    <BaseButton
-      variant="secondary"
-      :selected="modelValue === 'kanban'"
-      @click="emit('update:modelValue', 'kanban')"
-    >
-      <Columns3 class="h-4 w-4" aria-hidden="true" />
-      {{ t('views.kanban') }}
+      <component :is="view.icon" class="h-4 w-4" aria-hidden="true" />
+      {{ t(`views.${view.id}`) }}
     </BaseButton>
   </div>
 </template>

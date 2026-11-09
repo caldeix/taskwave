@@ -7,6 +7,9 @@ describe('vista principal en la URL', () => {
     expect(viewToQuery('kanban')).toBe('kanban')
     expect(viewFromQuery('calendario', 'kanban')).toBe('calendar')
     expect(viewFromQuery('kanban', 'calendar')).toBe('kanban')
+    expect(viewToQuery('list')).toBe('lista')
+    expect(viewFromQuery('lista', 'calendar')).toBe('list')
+    expect(viewFromQuery('backlog', 'calendar')).toBe('backlog')
   })
 
   it('sin valor o con un valor raro usa la preferencia', () => {
