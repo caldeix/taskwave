@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getDocs, limit, query } from 'firebase/firestore'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import BaseSelect from '@/components/ui/BaseSelect.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import { useTaskSearch } from '@/composables/useTaskSearch'
-import { subtasksQuery } from '@/data/taskQueries'
+import { countSubtasks } from '@/data/taskQueries'
 import {
   MAX_LINKS,
   RELATION_KINDS,
@@ -22,9 +20,10 @@ import { useTasksStore } from '@/stores/tasks'
 import { useToastsStore } from '@/stores/toasts'
 
 /**
- * Formulario para vincular la tarea (step-16, D-41): tipo de relación (los de Jira y las dos de
- * subtarea) y buscador por clave o título. Busca en las tareas abiertas (una consulta acotada) y,
- * si se escribe una clave exacta, también en las cerradas.
+ * Formulario para vincular la tarea (step-16, D-41), en una fila como en Jira (v1.0.2): tipo de
+ * relación a la izquierda (los de Jira y las dos de subtarea) y buscador por clave o título a la
+ * derecha, con el foco ya dentro. Busca en las tareas abiertas (una consulta acotada) y, si se
+ * escribe una clave exacta, también en las cerradas. Enter vincula y Esc cierra.
  */
 const props = defineProps<{ task: Task; hasSubtasks: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -68,7 +67,7 @@ async function pick(target: Task): Promise<void> {
     // Las subtareas no se guardan en la padre: se pregunta si la elegida tiene alguna.
     const targetHasSubtasks =
       selected.value === 'child' && uid.value
-        ? !(await getDocs(query(subtasksQuery(db, uid.value, target.id), limit(1)))).empty
+        ? (await countSubtasks(db, uid.value, target.id)) > 0
         : false
     const problem = checkRelation(
       props.task,
@@ -122,16 +121,17 @@ const listId = `link-results-${Math.random().toString(36).slice(2, 8)}`
     class="flex flex-col gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700"
     @keydown.esc.prevent="emit('close')"
   >
-    <BaseSelect v-model="kind" :label="t('relations.kindLabel')">
-      <option v-for="option in kindOptions" :key="option.value" :value="option.value">
-        {{ option.label }}
-      </option>
-    </BaseSelect>
-
-    <label class="flex flex-col gap-1">
-      <span class="font-text text-sm font-medium text-gray-800 dark:text-white">
-        {{ t('relations.search') }}
-      </span>
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <select
+        v-model="kind"
+        :aria-label="t('relations.kindLabel')"
+        :title="t('relations.kindLabel')"
+        class="h-10 shrink-0 cursor-pointer rounded-lg border-0 bg-gray-100 px-3 font-text text-sm text-gray-800 transition focus:outline-2 focus:outline-blue-500 sm:w-52 dark:bg-gray-800 dark:text-white"
+      >
+        <option v-for="option in kindOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </select>
       <input
         ref="input"
         v-model="text"
@@ -141,14 +141,15 @@ const listId = `link-results-${Math.random().toString(36).slice(2, 8)}`
         :aria-expanded="results.length > 0"
         :aria-controls="listId"
         :aria-activedescendant="results.length ? `${listId}-${active}` : undefined"
+        :aria-label="t('relations.search')"
         :placeholder="t('relations.searchPlaceholder')"
-        class="h-10 w-full rounded-lg border-0 bg-gray-100 px-4 font-text text-sm text-gray-800 transition placeholder:text-gray-500 focus:outline-2 focus:outline-blue-500 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400"
+        class="h-10 min-w-0 flex-1 rounded-lg border-0 bg-gray-100 px-4 font-text text-sm text-gray-800 transition placeholder:text-gray-500 focus:outline-2 focus:outline-blue-500 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-400"
         @keydown="onKeydown"
       />
-      <span class="font-text text-sm text-gray-500 dark:text-gray-400">
-        {{ t('relations.searchHelp') }}
-      </span>
-    </label>
+    </div>
+    <span class="-mt-1 font-text text-xs text-gray-500 dark:text-gray-400">
+      {{ t('relations.searchHelp') }}
+    </span>
 
     <ul
       v-if="results.length"
