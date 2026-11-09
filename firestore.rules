@@ -1,6 +1,7 @@
 rules_version = '2';
 
-// Reglas de TaskWave (steps 5 y 6 del plan TASKWAVE-01).
+// Reglas de TaskWave (steps 5 y 6 del plan TASKWAVE-01; campos y colecciones de la v1.1.0 en el
+// plan TASKWAVE-02).
 // - Cada usuario solo accede a lo suyo (`users/{uid}/...`), y solo si su cuenta está activa
 //   y su correo verificado.
 // - El admin lista perfiles y cambia el estado de otros, pero no ve sus datos (D-7).
@@ -89,7 +90,7 @@ service cloud.firestore {
         && p.keys().hasOnly(['theme', 'view', 'sidebarCollapsed', 'startedCollapsed', 'hoursPerDay',
                            'timerWarnHours', 'filters'])
         && (!('theme' in p) || p.theme in ['light', 'dark', 'system'])
-        && (!('view' in p) || p.view in ['calendar', 'kanban'])
+        && (!('view' in p) || p.view in ['calendar', 'kanban', 'list', 'backlog'])
         && (!('sidebarCollapsed' in p) || p.sidebarCollapsed is bool)
         && (!('startedCollapsed' in p) || p.startedCollapsed is bool)
         && (!('hoursPerDay' in p) || isIntIn(p.hoursPerDay, 1, 24))
@@ -182,11 +183,23 @@ service cloud.firestore {
       }
 
       // ---------------------------------------------------------- tareas
+      function taskKeys() {
+        return ['key', 'projectId', 'title', 'description', 'status', 'priority', 'startDate',
+                'endDate', 'estimateMin', 'spentMin', 'lastWorkedAt', 'tagIds', 'links', 'parentId',
+                'weblinks', 'resolvedAt', 'createdAt', 'updatedAt'];
+      }
+      // Recurrencia (v1.1.0, D-9): cada N días, semanas, meses o años.
+      function isValidRecurrence(r) {
+        return r == null || (r is map && hasExactly(r, ['freq', 'interval'])
+          && r.freq in ['day', 'week', 'month', 'year'] && isIntIn(r.interval, 1, 365));
+      }
       function isValidTask(data) {
-        return hasExactly(data, ['key', 'projectId', 'title', 'description', 'status', 'priority',
-                                 'startDate', 'endDate', 'estimateMin', 'spentMin', 'lastWorkedAt',
-                                 'tagIds', 'links', 'parentId', 'weblinks', 'resolvedAt',
-                                 'createdAt', 'updatedAt'])
+        // Los campos de la v1.1.0 son opcionales: las tareas antiguas no los tienen (D-8, D-9).
+        return data.keys().hasAll(taskKeys())
+          && data.keys().hasOnly(taskKeys().concat(['rank', 'plannedWeek', 'recurrence']))
+          && (!('rank' in data) || data.rank == null || data.rank is number)
+          && (!('plannedWeek' in data) || isOptDay(data.plannedWeek))
+          && (!('recurrence' in data) || isValidRecurrence(data.recurrence))
           && data.key is string && data.key.matches('^[A-Z][A-Z0-9]{1,5}-[0-9]{1,7}$')
           && isOptStr(data.projectId, 128)
           && isStr(data.title, 1, 200)
@@ -276,6 +289,37 @@ service cloud.firestore {
       match /worklogs/{worklogId} {
         allow read, delete: if isActiveOwner(uid);
         allow create, update: if isActiveOwner(uid) && isValidWorklog(request.resource.data);
+      }
+
+      // ---------------------------------------------------------- plantillas (v1.1.0, D-10)
+      match /templates/{templateId} {
+        allow read, delete: if isActiveOwner(uid);
+        allow create, update: if isActiveOwner(uid)
+          && hasExactly(request.resource.data, ['name', 'title', 'description', 'priority',
+                                                 'estimateMin', 'tagIds', 'subtasks', 'createdAt'])
+          && isStr(request.resource.data.name, 1, 80)
+          && isStr(request.resource.data.title, 1, 200)
+          && isStr(request.resource.data.description, 0, 50000)
+          && request.resource.data.priority in ['high', 'medium', 'low']
+          && (request.resource.data.estimateMin == null
+              || isIntIn(request.resource.data.estimateMin, 0, 1000000))
+          && isList(request.resource.data.tagIds, 20)
+          && isList(request.resource.data.subtasks, 30)
+          && request.resource.data.createdAt is timestamp;
+      }
+
+      // ---------------------------------------------------------- papelera (v1.1.0, D-11)
+      // La tarea borrada, con sus comentarios y horas, en un solo documento. No se edita: se
+      // restaura (se recrea la tarea y se borra de aquí) o se borra.
+      match /trash/{taskId} {
+        allow read, delete: if isActiveOwner(uid);
+        allow create: if isActiveOwner(uid)
+          && hasExactly(request.resource.data, ['task', 'comments', 'worklogs', 'deletedAt'])
+          && request.resource.data.task is map
+          && request.resource.data.task.key is string
+          && request.resource.data.comments is list
+          && request.resource.data.worklogs is list
+          && request.resource.data.deletedAt == request.time;
       }
 
       // ---------------------------------------------------------- tags
