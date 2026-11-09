@@ -58,4 +58,3 @@ Con una cuenta activa dentro, la app instala `window.taskwave` (`src/automation/
 - `await window.taskwave.help()` lista las funciones: lectura (`ready`, `projects`, `tags`, `templates`, `tasks`, `task`, `today`, `timerState`) y escritura (`createTask`, `updateTask`, `setStatus`, `move`, `logHours`, `comment`, `link`, `duplicate`, `remove`, `startTimer`, `stopTimer`).
 - Acepta estados, prioridades, recurrencias y vínculos en español o en inglés, fechas como «hoy» o «mañana», duraciones como `1h 30m`, y proyectos y tags por nombre (`src/automation/normalize.ts`, con tests).
 - Los errores son `Error` con el motivo en español.
-
