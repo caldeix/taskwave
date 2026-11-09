@@ -98,6 +98,8 @@ async function adopt(target: Task): Promise<void> {
   }
 }
 
+defineExpose({ focus: () => input.value?.focus() })
+
 /** Tras guardar, el foco vuelve al campo para seguir añadiendo. */
 function refocus(): void {
   requestAnimationFrame(() => input.value?.focus())

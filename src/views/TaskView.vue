@@ -1,24 +1,36 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ArrowLeft, Copy, PanelRightClose, PanelRightOpen, Trash2 } from 'lucide-vue-next'
+import {
+  ArrowLeft,
+  Command as CommandIcon,
+  Copy,
+  PanelRightClose,
+  PanelRightOpen,
+  Trash2,
+} from 'lucide-vue-next'
 import TaskDescription from '@/components/task/TaskDescription.vue'
 import TaskDetailsPanel from '@/components/task/TaskDetailsPanel.vue'
 import TaskRelations from '@/components/task/TaskRelations.vue'
 import TaskTabs from '@/components/task/TaskTabs.vue'
 import TaskTitle from '@/components/task/TaskTitle.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
+import CommandPalette from '@/components/ui/CommandPalette.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useLiveTasks } from '@/composables/useLiveTasks'
 import { useRelatedTasks } from '@/composables/useRelatedTasks'
 import { taskByKeyQuery } from '@/data/taskQueries'
+import type { Command } from '@/domain/commands'
 import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
-import type { Task } from '@/domain/task'
+import { isTypingTarget } from '@/domain/shortcuts'
+import { TASK_STATUSES, isClosedStatus } from '@/domain/status'
+import { PRIORITIES, type Task } from '@/domain/task'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from '@/stores/auth'
 import { useProjectsStore } from '@/stores/projects'
 import { useTasksStore } from '@/stores/tasks'
+import { useTimerStore } from '@/stores/timer'
 import { useToastsStore } from '@/stores/toasts'
 
 /**
@@ -133,6 +145,137 @@ async function confirmDelete(): Promise<void> {
   }
 }
 
+// ---- Paleta de comandos con «.» (v1.1.0, idea 3, D-4) ----
+const timer = useTimerStore()
+const relations = ref<InstanceType<typeof TaskRelations> | null>(null)
+const paletteOpen = ref(false)
+
+async function guarded(action: () => Promise<unknown>): Promise<void> {
+  try {
+    await action()
+  } catch (error) {
+    if (!(error instanceof Error && error.message === 'timer-stop-failed'))
+      toasts.show(t('taskView.saveFailed'), 'error')
+  }
+}
+
+const commands = computed<Command[]>(() => {
+  const current = task.value
+  if (!current) return []
+  const list: Command[] = []
+  const group = (key: string) => t(`commands.groups.${key}`)
+  for (const status of TASK_STATUSES)
+    if (status !== current.status)
+      list.push({
+        id: `status:${status}`,
+        group: group('status'),
+        label: t(`status.${status}`),
+        run: () => guarded(() => tasksStore.setStatus(current, status)),
+      })
+  for (const priority of PRIORITIES)
+    if (priority !== current.priority)
+      list.push({
+        id: `priority:${priority}`,
+        group: group('priority'),
+        label: t(`tasks.priority.${priority}`),
+        run: () => guarded(() => tasksStore.updateFields(current, { priority })),
+      })
+  const running = timer.isRunningOn(current.id)
+  list.push({
+    id: 'timer',
+    group: group('task'),
+    label: running ? t('commands.stopTimer') : t('commands.startTimer'),
+    keywords: 'cronometro reloj tiempo',
+    disabled: !running && isClosedStatus(current.status),
+    run: () => (running ? timer.requestStop() : timer.requestStart(current)),
+  })
+  list.push(
+    {
+      id: 'link',
+      group: group('task'),
+      label: t('commands.link'),
+      keywords: 'vinculo relacion',
+      run: () => {
+        relations.value?.startLinking()
+      },
+    },
+    {
+      id: 'subtask',
+      group: group('task'),
+      label: t('commands.subtask'),
+      disabled: !!current.parentId,
+      run: () => {
+        relations.value?.focusSubtask()
+      },
+    },
+    {
+      id: 'comment',
+      group: group('task'),
+      label: t('commands.comment'),
+      run: () => {
+        document.querySelector<HTMLButtonElement>('[data-command="add-comment"]')?.click()
+      },
+    },
+    {
+      id: 'copy-link',
+      group: group('task'),
+      label: t('commands.copyLink'),
+      keywords: 'url compartir',
+      run: async () => {
+        try {
+          await navigator.clipboard.writeText(window.location.href)
+          toasts.show(t('commands.copied'))
+        } catch {
+          toasts.show(t('commands.copyFailed'), 'error')
+        }
+      },
+    },
+    {
+      id: 'duplicate',
+      group: group('task'),
+      label: t('tasks.duplicate'),
+      keywords: 'copiar',
+      run: duplicate,
+    },
+    {
+      id: 'delete',
+      group: group('task'),
+      label: t('common.delete'),
+      keywords: 'eliminar borrar papelera',
+      run: () => {
+        deleting.value = true
+      },
+    },
+  )
+  if (current.projectId !== null)
+    list.push({
+      id: 'project:inbox',
+      group: group('project'),
+      label: t('nav.inbox'),
+      run: () => moveProject(null),
+    })
+  for (const p of projectsStore.active)
+    if (p.id !== current.projectId)
+      list.push({
+        id: `project:${p.id}`,
+        group: group('project'),
+        label: p.name,
+        run: () => moveProject(p.id),
+      })
+  return list
+})
+
+/** «.» abre la paleta si no se está escribiendo ni hay otro diálogo abierto. */
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key !== '.' || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return
+  if (isTypingTarget(event.target) || document.querySelector('dialog[open]')) return
+  if (!task.value) return
+  event.preventDefault()
+  paletteOpen.value = true
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+
 const iconButton =
   'inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-gray-500 transition hover:bg-gray-200 hover:text-gray-800 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white'
 </script>
@@ -164,6 +307,16 @@ const iconButton =
         <span class="truncate">{{ project.name }}</span>
       </RouterLink>
       <div v-if="shown" class="ml-auto flex items-center gap-1">
+        <button
+          type="button"
+          :class="iconButton"
+          :aria-label="t('commands.open')"
+          :title="t('commands.open')"
+          aria-keyshortcuts="."
+          @click="paletteOpen = true"
+        >
+          <CommandIcon class="h-4 w-4" aria-hidden="true" />
+        </button>
         <button
           type="button"
           :class="iconButton"
@@ -220,6 +373,7 @@ const iconButton =
         <TaskDescription :task="shown" />
 
         <TaskRelations
+          ref="relations"
           :task="shown"
           :by-id="related.byId.value"
           :parent="related.parent.value"
@@ -240,6 +394,12 @@ const iconButton =
       />
     </div>
 
+    <CommandPalette
+      :open="paletteOpen"
+      :commands="commands"
+      :title="shown ? t('commands.title', { key: shown.key }) : ''"
+      @close="paletteOpen = false"
+    />
     <ConfirmDialog
       :open="deleting"
       :title="t('tasks.confirmDelete.title')"

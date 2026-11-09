@@ -42,6 +42,13 @@ const tasksStore = useTasksStore()
 const toasts = useToastsStore()
 
 const linking = ref(false)
+const subtaskInput = ref<InstanceType<typeof SubtaskInput> | null>(null)
+
+/** Para la paleta de comandos (v1.1.0): abrir el buscador de vínculos o ir a «Nueva subtarea». */
+defineExpose({
+  startLinking: () => (linking.value = true),
+  focusSubtask: () => subtaskInput.value?.focus(),
+})
 const groups = computed(() => groupLinks(props.task.links))
 const keyOf = (id: string) => props.byId.get(id)?.key ?? '?'
 
@@ -222,6 +229,6 @@ const addButton =
       />
     </ul>
 
-    <SubtaskInput :task="task" :subtasks="subtasks" />
+    <SubtaskInput ref="subtaskInput" :task="task" :subtasks="subtasks" />
   </section>
 </template>

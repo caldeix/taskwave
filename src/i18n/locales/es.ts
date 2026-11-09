@@ -567,6 +567,21 @@ const es = {
       recent: 'Aún no has tocado ninguna tarea.',
     },
   },
+  commands: {
+    open: 'Comandos de la tarea (.)',
+    title: 'Comandos de {key}',
+    placeholder: 'Escribe un comando: estado, prioridad, proyecto, duplicar…',
+    empty: 'Ningún comando coincide.',
+    groups: { status: 'Estado', priority: 'Prioridad', task: 'Tarea', project: 'Mover a' },
+    startTimer: 'Iniciar el cronómetro',
+    stopTimer: 'Parar el cronómetro',
+    link: 'Vincular una tarea',
+    subtask: 'Añadir una subtarea',
+    comment: 'Comentar',
+    copyLink: 'Copiar el enlace',
+    copied: 'Enlace copiado.',
+    copyFailed: 'No se ha podido copiar el enlace.',
+  },
   kanban: {
     progress: {
       blocked: 'Bloqueada',

@@ -101,6 +101,7 @@ async function confirmDelete(): Promise<void> {
       v-else
       type="button"
       class="cursor-text rounded-lg border border-dashed border-gray-300 bg-transparent px-3 py-3 text-left font-text text-sm text-gray-500 transition hover:border-blue-500 hover:text-gray-800 focus-visible:outline-2 focus-visible:outline-blue-600 dark:border-gray-600 dark:text-gray-400 dark:hover:text-white"
+      data-command="add-comment"
       @click="writing = true"
     >
       {{ t('comments.add') }}
