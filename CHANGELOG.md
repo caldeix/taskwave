@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.3.0] - 2026-11-10
+
+### Añadido
+
+- API de automatización `window.taskwave`, disponible con la sesión iniciada, para usar TaskWave desde Claude (skill `use-taskwave`) sin leer la pantalla: buscar tareas, ver el detalle de una, «para hoy», crear (con proyecto, tags que se crean si faltan, estimado, recurrencia, como subtarea o desde una plantilla), editar, cambiar el estado, mover de proyecto, apuntar horas, comentar, vincular, duplicar, mandar a la papelera y manejar el cronómetro. Usa las mismas validaciones y automatismos que la interfaz y responde con errores claros en español.
+
 ## [1.2.0] - 2026-11-09
 
 **Antes de publicar hay que desplegar el índice nuevo de Firestore** (`npx firebase deploy --only firestore`): la consulta de tareas recurrentes de un proyecto o de la bandeja lo necesita.

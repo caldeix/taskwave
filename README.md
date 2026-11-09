@@ -9,7 +9,7 @@
 [![Autor: caldeix](https://img.shields.io/badge/autor-caldeix-181717?logo=github&logoColor=white)](https://github.com/caldeix)
 ![© 2026 Caldeix](https://img.shields.io/badge/%C2%A9_2026-Caldeix-D4AF37)
 
-![Version](https://img.shields.io/badge/Version-1.2.0-2563EB.svg)
+![Version](https://img.shields.io/badge/Version-1.3.0-2563EB.svg)
 ![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
@@ -57,6 +57,7 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 - **Tareas recurrentes** — Cada día, semana, mes o año: al terminar una, se crea la siguiente, y sus próximas repeticiones se ven en el calendario como «fantasmas» aclarados
 - **Plantillas** — Guarda una tarea con sus subtareas como plantilla y crea otras iguales en un clic
 - **Papelera** — Las tareas borradas se pueden restaurar durante 30 días
+- **Desde Claude** — Una API en la propia página permite a Claude manejar tus tareas cuando se lo pides en el chat
 - **Copia de seguridad** — Descarga todo en JSON o las tareas en CSV, e importa una copia sin pisar lo que ya tienes
 - **Búsqueda y atajos** — `Ctrl+K` busca tareas por clave o título y proyectos. Atajos: `N` nueva tarea, `C` calendario, `K` kanban y `/` buscar
 - **Duplicar tareas** — Copia título, fechas, estimado, descripción, tags y enlaces; la copia nace Pendiente y sin horas
@@ -70,6 +71,10 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 ---
 
 ## Changelog
+
+### v1.3.0 — TaskWave desde Claude
+
+- **API de automatización** — Con la sesión iniciada, Claude puede crear, buscar, cerrar, mover y cronometrar tareas, apuntar horas o comentar directamente, sin leer la pantalla
 
 ### v1.2.0 — Repeticiones a la vista
 
