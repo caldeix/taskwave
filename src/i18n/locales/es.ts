@@ -375,7 +375,7 @@ const es = {
     },
     danger: {
       title: 'Borrar la cuenta',
-      text: 'Se borran para siempre tus tareas, horas, proyectos, tags y comentarios, y tu cuenta. No se puede deshacer.',
+      text: 'Se borran para siempre tus tareas, horas, proyectos, tags, comentarios, plantillas y la papelera, y tu cuenta. No se puede deshacer.',
       button: 'Borrar mi cuenta…',
     },
     delete: {
@@ -684,6 +684,30 @@ const es = {
     confirmTitle: '¿Borrar definitivamente?',
     confirmOne: '{key} se borrará para siempre y no se podrá restaurar.',
     confirmAll: 'Se borrará para siempre {n} tarea. | Se borrarán para siempre {n} tareas.',
+  },
+  backup: {
+    title: 'Copia de seguridad',
+    help: 'Firebase no hace copias en el plan gratuito: descarga de vez en cuando una copia con tus proyectos, tags, tareas, comentarios, horas y plantillas. Al importar solo se crea lo que no existe; nada se sobrescribe.',
+    exportJson: 'Descargar copia (JSON)',
+    exportCsv: 'Tareas en CSV',
+    import: 'Importar una copia',
+    working: 'Un momento…',
+    exported: 'Copia descargada con {n} tareas.',
+    exportFailed: 'No se ha podido descargar la copia.',
+    imported: 'Copia importada: {n} tareas nuevas.',
+    importFailed: 'No se ha podido importar la copia. Lo importado hasta el fallo se queda.',
+    confirmTitle: '¿Importar esta copia?',
+    confirmMessage:
+      'La copia es del {date} y tiene {tasks} tareas y {projects} proyectos. Se creará lo que no exista; lo que ya tienes no cambia.',
+    summary:
+      'Importado: {tasks} tareas, {projects} proyectos, {tags} tags, {comments} comentarios, {worklogs} registros de horas y {templates} plantillas.',
+    skipped: 'No se han importado por tener una clave que ya usa otra tarea: {keys}.',
+    errors: {
+      notJson: 'El fichero no es un JSON válido.',
+      notTaskWave: 'El fichero no es una copia de TaskWave.',
+      newerFormat: 'La copia es de una versión más nueva de TaskWave. Actualiza la app.',
+      malformed: 'La copia está incompleta o dañada.',
+    },
   },
   kanban: {
     progress: {
