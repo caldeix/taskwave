@@ -9,7 +9,7 @@
 [![Autor: caldeix](https://img.shields.io/badge/autor-caldeix-181717?logo=github&logoColor=white)](https://github.com/caldeix)
 ![© 2026 Caldeix](https://img.shields.io/badge/%C2%A9_2026-Caldeix-D4AF37)
 
-![Version](https://img.shields.io/badge/Version-1.0.0-2563EB.svg)
+![Version](https://img.shields.io/badge/Version-1.0.1-2563EB.svg)
 ![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
@@ -61,6 +61,10 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 ---
 
 ## Changelog
+
+### v1.0.1 — Corrección
+
+- **Calendario** — Las tareas de la lista «+N más» de un día ya llevan a la tarea al pulsarlas (antes solo se veían)
 
 ### v1.0.0 — Primera versión
 

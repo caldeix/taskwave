@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.0.1] - 2026-11-09
+
+### Corregido
+
+- En el calendario, las tareas de la lista «+N más» de un día se podían ver pero no abrir: ahora cada una lleva a su vista (también en otra pestaña con Ctrl+clic o clic central).
+
 ## [1.0.0] - 2026-11-07
 
 ### Añadido
