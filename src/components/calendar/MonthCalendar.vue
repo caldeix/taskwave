@@ -2,13 +2,14 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
-import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Repeat } from 'lucide-vue-next'
 import CalendarTaskBar from './CalendarTaskBar.vue'
 import QuickAddForm from './QuickAddForm.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseDialog from '@/components/ui/BaseDialog.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
 import {
+  ghostsOfDay,
   hiddenPerDay,
   layoutWeek,
   monthGrid,
@@ -33,6 +34,8 @@ const props = defineProps<{
   creating: boolean
   /** Horas registradas de cada día (step-24, D-52). */
   minutesByDay?: Record<DayKey, number>
+  /** Repeticiones futuras de las tareas recurrentes (v1.2.0). */
+  ghosts?: Task[]
 }>()
 const emit = defineEmits<{
   move: [task: Task, dates: { startDate: DayKey; endDate: DayKey | null }]
@@ -64,7 +67,7 @@ interface WeekView {
 
 const weekViews = computed<WeekView[]>(() =>
   weeks.value.map((days) => {
-    const segments = layoutWeek(days, props.tasks)
+    const segments = layoutWeek(days, props.tasks, props.ghosts ?? [])
     return {
       days,
       segments,
@@ -160,10 +163,14 @@ function onDrop(event: DragEvent, week: DayKey[]): void {
 }
 
 // ---- «+N más» ----
-const dayList = ref<{ day: DayKey; tasks: Task[] } | null>(null)
+const dayList = ref<{ day: DayKey; tasks: Task[]; ghosts: Task[] } | null>(null)
 
 function openDayList(day: DayKey, week: WeekView): void {
-  dayList.value = { day, tasks: tasksOfDay(day, week.segments) }
+  dayList.value = {
+    day,
+    tasks: tasksOfDay(day, week.segments),
+    ghosts: ghostsOfDay(day, week.segments),
+  }
 }
 </script>
 
@@ -332,6 +339,26 @@ function openDayList(day: DayKey, week: WeekView): void {
             </span>
             <span class="min-w-0 flex-1 truncate font-text text-sm">{{ task.title }}</span>
             <StatusBadge :status="task.status" class="shrink-0" />
+          </RouterLink>
+        </li>
+        <!-- Repeticiones fantasma del día (v1.2.0): llevan a la tarea actual de la serie -->
+        <li v-for="ghost in dayList.ghosts" :key="ghost.id">
+          <RouterLink
+            :to="{ name: 'task', params: { taskKey: ghost.key } }"
+            :aria-label="
+              t('calendar.ghostLabel', {
+                key: ghost.key,
+                title: ghost.title,
+                date: ghost.startDate,
+              })
+            "
+            class="flex min-w-0 items-center gap-2 rounded-lg border border-dashed border-gray-300 px-2 py-1.5 text-gray-800 no-underline opacity-60 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-blue-600 dark:border-gray-600 dark:text-white"
+          >
+            <Repeat class="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+            <span class="min-w-0 flex-1 truncate font-text text-sm">{{ ghost.title }}</span>
+            <span class="shrink-0 font-text text-xs text-gray-500 dark:text-gray-400">{{
+              t('calendar.ghostBadge')
+            }}</span>
           </RouterLink>
         </li>
       </ul>

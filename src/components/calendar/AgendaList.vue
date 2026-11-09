@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-vue-next'
 import PriorityIcon from '@/components/tasks/PriorityIcon.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import StatusBadge from '@/components/ui/StatusBadge.vue'
@@ -21,6 +21,8 @@ const props = defineProps<{
   tasks: Task[]
   today: DayKey
   minutesByDay?: Record<DayKey, number>
+  /** Repeticiones futuras de las tareas recurrentes (v1.2.0). */
+  ghosts?: Task[]
 }>()
 const emit = defineEmits<{
   openTask: [task: Task]
@@ -44,7 +46,7 @@ const shortFmt = computed(
   () => new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short' }),
 )
 const days = computed(() =>
-  agendaDays(props.month, props.tasks, props.today, props.minutesByDay ?? {}),
+  agendaDays(props.month, props.tasks, props.today, props.minutesByDay ?? {}, props.ghosts ?? []),
 )
 
 /** «→ 12 nov» en las tareas de varios días. */
@@ -145,7 +147,37 @@ function span(task: Task): string {
             </button>
           </li>
         </ul>
-        <p v-else class="m-0 pl-1 font-text text-xs text-gray-500 dark:text-gray-400">
+        <ul v-if="day.ghosts.length" class="m-0 flex list-none flex-col gap-1 p-0">
+          <li v-for="ghost in day.ghosts" :key="ghost.id">
+            <button
+              type="button"
+              class="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-gray-300 bg-transparent px-3 py-2 text-left font-text opacity-60 transition hover:opacity-100 focus-visible:outline-2 focus-visible:outline-blue-600 dark:border-gray-600"
+              :aria-label="
+                t('calendar.ghostLabel', {
+                  key: ghost.key,
+                  title: ghost.title,
+                  date: ghost.startDate,
+                })
+              "
+              @click="emit('openTask', ghost)"
+            >
+              <Repeat
+                class="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400"
+                aria-hidden="true"
+              />
+              <span class="min-w-0 flex-1 truncate text-sm text-gray-800 dark:text-white">{{
+                ghost.title
+              }}</span>
+              <span class="shrink-0 text-xs text-gray-500 dark:text-gray-400">{{
+                t('calendar.ghostBadge')
+              }}</span>
+            </button>
+          </li>
+        </ul>
+        <p
+          v-if="!day.tasks.length && !day.ghosts.length"
+          class="m-0 pl-1 font-text text-xs text-gray-500 dark:text-gray-400"
+        >
           {{ t('calendar.agendaNoTasks') }}
         </p>
       </li>

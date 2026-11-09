@@ -20,7 +20,13 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useLiveTasks } from '@/composables/useLiveTasks'
 import { useLiveWorklogs } from '@/composables/useLiveWorklogs'
 import { useMediaQuery } from '@/composables/useMediaQuery'
-import { closedSinceQuery, openQuery, rangeQueries, undatedQuery } from '@/data/taskQueries'
+import {
+  closedSinceQuery,
+  openQuery,
+  rangeQueries,
+  recurringQuery,
+  undatedQuery,
+} from '@/data/taskQueries'
 import { CLOSED_WINDOWS, closedSinceMs, nextClosedWindow, type ClosedWindow } from '@/domain/kanban'
 import type { TaskStatus } from '@/domain/status'
 import { withTag, withoutTag } from '@/domain/table'
@@ -37,6 +43,7 @@ import type { Priority, Task, TaskScope } from '@/domain/task'
 import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
 import { db } from '@/lib/firebase'
 import { applyFilters, sortTasks } from '@/domain/filters'
+import { ghostOccurrences } from '@/domain/recurrence'
 import { minutesPerDay } from '@/domain/stats'
 import { useAuthStore } from '@/stores/auth'
 import { useFiltersStore } from '@/stores/filters'
@@ -130,6 +137,16 @@ const { tasks: undatedTasks } = useLiveTasks(() =>
     : null,
 )
 
+// Tareas con recurrencia, para sus repeticiones fantasma en el calendario (v1.2.0).
+const { tasks: recurringTasks } = useLiveTasks(() =>
+  view.value === 'calendar' && uid.value && taskScope.value
+    ? {
+        key: `recurring:${uid.value}:${scopeKey.value}`,
+        queries: [recurringQuery(db, uid.value, taskScope.value)],
+      }
+    : null,
+)
+
 // ---- Kanban (step-12) y lista (v1.1.0): abiertas + cerradas del periodo (D-36) ----
 const closedWindow = ref<ClosedWindow>(CLOSED_WINDOWS[0])
 const { tasks: boardTasks } = useLiveTasks(() =>
@@ -179,6 +196,17 @@ const backlogVisible = computed(() =>
     today: today.value,
     ignorePeriod: true,
   }),
+)
+/** Repeticiones fantasma del mes visible, de las recurrentes que pasan los filtros (v1.2.0). */
+const ghostTasks = computed(() =>
+  ghostOccurrences(
+    applyFilters(recurringTasks.value, calendarFilters.value, {
+      today: today.value,
+      ignorePeriod: true,
+    }),
+    visibleRange.value,
+    today.value,
+  ),
 )
 function kanbanSorter(tasks: Task[]): Task[] {
   return sortTasks(tasks, filtersStore.filters.sort, filtersStore.filters.sortDir)
@@ -447,6 +475,7 @@ async function confirmDelete(): Promise<void> {
           :tasks="calendarTasks"
           :today="today"
           :minutes-by-day="hoursByDay"
+          :ghosts="ghostTasks"
           @open-task="openTask"
           @open-new="(day) => (newTask = { startDate: day, title: '' })"
           @change-month="changeMonth"
@@ -459,6 +488,7 @@ async function confirmDelete(): Promise<void> {
           :today="today"
           :creating="creating"
           :minutes-by-day="hoursByDay"
+          :ghosts="ghostTasks"
           @move="moveTask"
           @quick-create="quickCreate"
           @open-new="(day, text) => (newTask = { startDate: day, title: text })"

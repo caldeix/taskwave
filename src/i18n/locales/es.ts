@@ -727,6 +727,9 @@ const es = {
     moveFailed: 'No se pudo cambiar el estado de {key}. Vuelve a intentarlo.',
   },
   calendar: {
+    ghostLabel:
+      'Próxima repetición de {key} «{title}» el {date}. Pulsa para abrir la tarea actual.',
+    ghostBadge: 'Se repite',
     agendaEmpty: 'No hay tareas con fecha este mes.',
     agendaNoTasks: 'Sin tareas; solo horas registradas.',
     hoursLogged: '{hours} registradas este día',
