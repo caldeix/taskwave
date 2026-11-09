@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import CalendarTaskBar from './CalendarTaskBar.vue'
 import QuickAddForm from './QuickAddForm.vue'
@@ -317,13 +318,21 @@ function openDayList(day: DayKey, week: WeekView): void {
       :title="dayList ? longDay.format(fromDayKey(dayList.day)) : ''"
       @close="dayList = null"
     >
-      <ul v-if="dayList" class="m-0 flex list-none flex-col gap-2 p-0">
-        <li v-for="task in dayList.tasks" :key="task.id" class="flex min-w-0 items-center gap-2">
-          <span class="w-16 shrink-0 font-text text-sm font-bold text-gray-500 dark:text-gray-400">
-            {{ task.key }}
-          </span>
-          <span class="min-w-0 flex-1 truncate font-text text-sm">{{ task.title }}</span>
-          <StatusBadge :status="task.status" />
+      <ul v-if="dayList" class="m-0 flex list-none flex-col gap-1 p-0">
+        <li v-for="task in dayList.tasks" :key="task.id">
+          <!-- Cada tarea lleva a su vista (también con Ctrl+clic o clic central, en otra pestaña) -->
+          <RouterLink
+            :to="{ name: 'task', params: { taskKey: task.key } }"
+            class="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-gray-800 no-underline transition hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-white dark:hover:bg-gray-800"
+          >
+            <span
+              class="w-16 shrink-0 font-text text-sm font-bold text-blue-600 dark:text-blue-400"
+            >
+              {{ task.key }}
+            </span>
+            <span class="min-w-0 flex-1 truncate font-text text-sm">{{ task.title }}</span>
+            <StatusBadge :status="task.status" class="shrink-0" />
+          </RouterLink>
         </li>
       </ul>
       <div class="flex justify-end">
