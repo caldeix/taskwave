@@ -12,6 +12,8 @@ import NewTaskDialog from '@/components/tasks/NewTaskDialog.vue'
 import StartedStrip from '@/components/tasks/StartedStrip.vue'
 import FiltersBar from '@/components/filters/FiltersBar.vue'
 import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
+import BulkBar from '@/components/list/BulkBar.vue'
+import TaskTable from '@/components/list/TaskTable.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import { useLiveTasks } from '@/composables/useLiveTasks'
@@ -20,6 +22,7 @@ import { useMediaQuery } from '@/composables/useMediaQuery'
 import { closedSinceQuery, openQuery, rangeQueries, undatedQuery } from '@/data/taskQueries'
 import { CLOSED_WINDOWS, closedSinceMs, nextClosedWindow, type ClosedWindow } from '@/domain/kanban'
 import type { TaskStatus } from '@/domain/status'
+import { withTag, withoutTag } from '@/domain/table'
 import {
   formatMonthParam,
   gridRange,
@@ -29,7 +32,7 @@ import {
 } from '@/domain/calendar'
 import { todayKey, type DayKey } from '@/domain/dates'
 import { PROJECT_COLOR_CLASSES, type Project } from '@/domain/projects'
-import type { Task, TaskScope } from '@/domain/task'
+import type { Priority, Task, TaskScope } from '@/domain/task'
 import { viewFromQuery, viewToQuery, type MainView } from '@/domain/views'
 import { db } from '@/lib/firebase'
 import { applyFilters, sortTasks } from '@/domain/filters'
@@ -44,7 +47,7 @@ import { useUiStore } from '@/stores/ui'
 
 /**
  * Vista principal: «Todos», «Sin proyecto» o un proyecto (step-8), en modo calendario
- * (step-11) o kanban (step-12).
+ * (step-11), kanban (step-12), lista o backlog (v1.1.0).
  */
 const props = defineProps<{ scope: 'all' | 'inbox' | 'project' }>()
 
@@ -126,10 +129,10 @@ const { tasks: undatedTasks } = useLiveTasks(() =>
     : null,
 )
 
-// ---- Kanban (step-12): abiertas + cerradas del periodo (D-36) ----
+// ---- Kanban (step-12) y lista (v1.1.0): abiertas + cerradas del periodo (D-36) ----
 const closedWindow = ref<ClosedWindow>(CLOSED_WINDOWS[0])
 const { tasks: boardTasks } = useLiveTasks(() =>
-  view.value === 'kanban' && uid.value && taskScope.value
+  (view.value === 'kanban' || view.value === 'list') && uid.value && taskScope.value
     ? {
         key: `board:${uid.value}:${scopeKey.value}:${closedWindow.value}`,
         queries: [
@@ -161,6 +164,89 @@ const boardVisible = computed(() =>
 )
 function kanbanSorter(tasks: Task[]): Task[] {
   return sortTasks(tasks, filtersStore.filters.sort, filtersStore.filters.sortDir)
+}
+
+// ---- Lista (v1.1.0, ideas 5 y 6): edición en la celda y cambios en bloque ----
+const selected = ref<string[]>([])
+watch([scopeKey, view], () => (selected.value = []))
+const savingId = ref<string | null>(null)
+const bulkBusy = ref(false)
+const bulkDeleting = ref(false)
+
+async function saveOne(task: Task, action: () => Promise<unknown>): Promise<void> {
+  savingId.value = task.id
+  try {
+    await action()
+  } catch (error) {
+    if (!(error instanceof Error && error.message === 'timer-stop-failed'))
+      toasts.show(t('taskView.saveFailed'), 'error')
+  } finally {
+    savingId.value = null
+  }
+}
+
+function changeEndDate(task: Task, endDate: DayKey | null): void {
+  if (endDate && task.startDate && endDate < task.startDate) {
+    toasts.show(t('list.endBeforeStart'), 'error')
+    return
+  }
+  void saveOne(task, () => tasksStore.setDates(task, { startDate: task.startDate, endDate }))
+}
+
+/** Aplica un cambio a cada tarea marcada, una detrás de otra, y avisa de cuántas han ido bien. */
+async function bulk(run: (task: Task) => Promise<unknown> | null): Promise<void> {
+  const byId = new Map(boardTasks.value.map((task) => [task.id, task]))
+  const targets = selected.value.map((id) => byId.get(id)).filter((task): task is Task => !!task)
+  bulkBusy.value = true
+  let done = 0
+  let failed = 0
+  for (const task of targets) {
+    try {
+      const pending = run(task)
+      if (pending) {
+        await pending
+        done += 1
+      }
+    } catch {
+      failed += 1
+    }
+  }
+  bulkBusy.value = false
+  toasts.show(
+    failed ? t('list.bulk.partial', { done, failed }) : t('list.bulk.done', { n: done }),
+    failed ? 'error' : undefined,
+  )
+}
+
+function bulkStatus(status: TaskStatus): void {
+  void bulk((task) => (task.status === status ? null : tasksStore.setStatus(task, status)))
+}
+function bulkPriority(priority: Priority): void {
+  void bulk((task) =>
+    task.priority === priority ? null : tasksStore.updateFields(task, { priority }),
+  )
+}
+function bulkProject(projectId: string | null): void {
+  void bulk((task) =>
+    task.projectId === projectId ? null : tasksStore.moveToProject(task, projectId),
+  )
+}
+function bulkAddTag(tagId: string): void {
+  void bulk((task) => {
+    const tagIds = withTag(task.tagIds, tagId)
+    return tagIds ? tasksStore.updateFields(task, { tagIds }) : null
+  })
+}
+function bulkRemoveTag(tagId: string): void {
+  void bulk((task) => {
+    const tagIds = withoutTag(task.tagIds, tagId)
+    return tagIds ? tasksStore.updateFields(task, { tagIds }) : null
+  })
+}
+async function bulkDelete(): Promise<void> {
+  await bulk((task) => tasksStore.remove(task))
+  bulkDeleting.value = false
+  selected.value = []
 }
 
 /** En «Todos» cada tarjeta muestra su proyecto; dentro de un proyecto no hace falta. */
@@ -365,9 +451,56 @@ async function confirmDelete(): Promise<void> {
         <UndatedPanel :tasks="undatedVisible" @open-task="openTask" />
       </div>
 
+      <!-- Lista (v1.1.0, ideas 5 y 6) -->
+      <template v-else-if="view === 'list'">
+        <TaskTable
+          v-model:selected="selected"
+          :tasks="boardVisible"
+          :today="today"
+          :project-of="
+            scope === 'all' ? (task) => projectsStore.byId(task.projectId ?? '') : undefined
+          "
+          :saving-id="savingId"
+          @change-status="(task, status) => saveOne(task, () => tasksStore.setStatus(task, status))"
+          @change-priority="
+            (task, priority) => saveOne(task, () => tasksStore.updateFields(task, { priority }))
+          "
+          @change-end-date="changeEndDate"
+        />
+        <p
+          class="m-0 flex flex-wrap items-center gap-2 font-text text-xs text-gray-500 dark:text-gray-400"
+        >
+          {{
+            closedWindow === null
+              ? t('kanban.closedAll')
+              : t('list.closedWindow', { days: closedWindow })
+          }}
+          <button
+            v-if="closedWindow !== null"
+            type="button"
+            class="cursor-pointer rounded-lg border-0 bg-transparent px-1 font-text text-xs font-bold text-blue-600 hover:text-blue-500 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-blue-400"
+            @click="closedWindow = nextClosedWindow(closedWindow)"
+          >
+            {{ t('kanban.showOlder') }}
+          </button>
+        </p>
+        <BulkBar
+          v-if="selected.length"
+          :count="selected.length"
+          :busy="bulkBusy"
+          @status="bulkStatus"
+          @priority="bulkPriority"
+          @project="bulkProject"
+          @add-tag="bulkAddTag"
+          @remove-tag="bulkRemoveTag"
+          @delete="bulkDeleting = true"
+          @clear="selected = []"
+        />
+      </template>
+
       <!-- Kanban (step-12) -->
       <KanbanBoard
-        v-else
+        v-else-if="view === 'kanban'"
         :tasks="boardVisible"
         :today="today"
         :project-of="projectOf"
@@ -390,6 +523,16 @@ async function confirmDelete(): Promise<void> {
       :title="newTask?.title ?? ''"
       @close="newTask = null"
       @created="newTask = null"
+    />
+    <ConfirmDialog
+      :open="bulkDeleting"
+      :title="t('list.bulk.confirmTitle')"
+      :message="t('list.bulk.confirmMessage', { n: selected.length })"
+      :confirm-label="t('list.bulk.delete')"
+      :cancel-label="t('common.cancel')"
+      :busy="bulkBusy"
+      @confirm="bulkDelete"
+      @cancel="bulkDeleting = false"
     />
     <ConfirmDialog
       :open="deleting !== null"

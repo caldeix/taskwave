@@ -144,6 +144,11 @@ export type EditableTaskFields = Partial<{
   estimateMin: number | null
   weblinks: { url: string; title: string }[]
   tagIds: string[]
+  /** Orden manual del backlog y semana planificada (v1.1.0, D-8). */
+  rank: number | null
+  plannedWeek: string | null
+  /** Recurrencia (v1.1.0, D-9). */
+  recurrence: { freq: 'day' | 'week' | 'month' | 'year'; interval: number } | null
 }>
 
 /**
