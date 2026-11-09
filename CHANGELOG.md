@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.2.0] - 2026-11-09
+
+**Antes de publicar hay que desplegar el índice nuevo de Firestore** (`npx firebase deploy --only firestore`): la consulta de tareas recurrentes de un proyecto o de la bandeja lo necesita.
+
+### Añadido
+
+- Repeticiones «fantasma» de las tareas recurrentes en el calendario y en la agenda del móvil: sus próximas repeticiones del mes se ven antes de que existan, aclaradas, con borde discontinuo, sin clave y con el icono de repetir. Conservan la duración de la tarea, respetan los filtros y al pulsarlas abren la tarea actual de la serie; no se arrastran ni suman horas.
+- Las fantasma van debajo de las tareas reales y nunca las desplazan a «+N más». Si un día no tiene hueco, cuentan en «+N más» y salen en la lista de ese día, debajo de las reales.
+
 ## [1.1.0] - 2026-11-09
 
 Mejoras de uso al estilo de Jira (plan TASKWAVE-02). **Antes de publicar hay que desplegar las reglas de Firestore** (`npx firebase deploy --only firestore`): las tareas con orden, semana o recurrencia, las plantillas y la papelera las necesitan.

@@ -9,7 +9,7 @@
 [![Autor: caldeix](https://img.shields.io/badge/autor-caldeix-181717?logo=github&logoColor=white)](https://github.com/caldeix)
 ![© 2026 Caldeix](https://img.shields.io/badge/%C2%A9_2026-Caldeix-D4AF37)
 
-![Version](https://img.shields.io/badge/Version-1.1.0-2563EB.svg)
+![Version](https://img.shields.io/badge/Version-1.2.0-2563EB.svg)
 ![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
@@ -54,7 +54,7 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 - **Backlog** — Orden manual arrastrando o con el teclado, y planificación en «Esta semana»
 - **Paleta de comandos** — Pulsa «.» dentro de una tarea para cambiar estado, prioridad o proyecto, cronometrar, vincular, duplicar o guardarla como plantilla sin tocar el ratón
 - **Claves enlazadas** — Escribir `EST-12` en una descripción o comentario crea un enlace con el color de su estado, y el editor autocompleta las claves
-- **Tareas recurrentes** — Cada día, semana, mes o año: al terminar una, se crea la siguiente
+- **Tareas recurrentes** — Cada día, semana, mes o año: al terminar una, se crea la siguiente, y sus próximas repeticiones se ven en el calendario como «fantasmas» aclarados
 - **Plantillas** — Guarda una tarea con sus subtareas como plantilla y crea otras iguales en un clic
 - **Papelera** — Las tareas borradas se pueden restaurar durante 30 días
 - **Copia de seguridad** — Descarga todo en JSON o las tareas en CSV, e importa una copia sin pisar lo que ya tienes
@@ -70,6 +70,10 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 ---
 
 ## Changelog
+
+### v1.2.0 — Repeticiones a la vista
+
+- **Repeticiones fantasma** — Las próximas repeticiones de las tareas recurrentes se ven en el calendario y en la agenda, aclaradas y sin clave, para planificar el mes antes de que existan
 
 ### v1.1.0 — Más cómoda, al estilo de Jira
 

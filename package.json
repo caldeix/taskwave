@@ -1,7 +1,7 @@
 {
   "name": "taskwave",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "TaskWave: gestor de tareas personales con calendario, kanban y registro de horas",
   "type": "module",
   "scripts": {
