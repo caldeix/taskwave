@@ -50,3 +50,12 @@ Cada push a `main` lanza el workflow [`.github/workflows/deploy.yml`](../.github
 - **CSP:** en producción la build añade un `<meta http-equiv="Content-Security-Policy">` con el hash de los scripts en línea (`src/lib/csp.ts`). No se añade con los emuladores.
 - **Reglas e índices de Firestore:** se despliegan a mano (no se guarda ningún token de Firebase en GitHub): `npx firebase login` una vez y después `npx firebase deploy --only firestore`.
 - **App Check:** clave de sitio de reCAPTCHA v3 en `VITE_APPCHECK_SITE_KEY` (y en el secreto). En desarrollo se usa un token de depuración registrado en la consola de Firebase.
+
+## API de automatización
+
+Con una cuenta activa dentro, la app instala `window.taskwave` (`src/automation/api.ts`, desde `AppLayout`), para que un asistente que maneje el navegador (Claude con la skill `use-taskwave`) use TaskWave sin leer la pantalla. Usa los mismos stores y validaciones que la interfaz, así que valen los automatismos (cierre, cronómetro, recurrentes, papelera) y las reglas de Firestore. Solo la pueden llamar scripts de la propia web (la CSP no deja cargar scripts de fuera) y desaparece al cerrar sesión.
+
+- `await window.taskwave.help()` lista las funciones: lectura (`ready`, `projects`, `tags`, `templates`, `tasks`, `task`, `today`, `timerState`) y escritura (`createTask`, `updateTask`, `setStatus`, `move`, `logHours`, `comment`, `link`, `duplicate`, `remove`, `startTimer`, `stopTimer`).
+- Acepta estados, prioridades, recurrencias y vínculos en español o en inglés, fechas como «hoy» o «mañana», duraciones como `1h 30m`, y proyectos y tags por nombre (`src/automation/normalize.ts`, con tests).
+- Los errores son `Error` con el motivo en español.
+
