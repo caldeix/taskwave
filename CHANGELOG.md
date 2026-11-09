@@ -2,6 +2,30 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-11-09
+
+Mejoras de uso al estilo de Jira (plan TASKWAVE-02). **Antes de publicar hay que desplegar las reglas de Firestore** (`npx firebase deploy --only firestore`): las tareas con orden, semana o recurrencia, las plantillas y la papelera las necesitan.
+
+### Añadido
+
+- Panel «Para hoy» (`/hoy`), primero en el menú: atrasadas, las de hoy, las que están en curso y las últimas tocadas, con el estado editable en cada fila.
+- Las claves de tarea (`EST-12`) escritas en una descripción o un comentario son enlaces a la tarea, con un punto del color de su estado y su título al pasar el ratón; abren la tarea sin recargar. No se tocan el código ni los enlaces ya escritos.
+- Al escribir una clave en el editor de markdown (`EST-`), se proponen las tareas que coinciden; Enter o Tab la completa.
+- Paleta de comandos con «.» en la vista de tarea (y un botón en la barra): cambiar estado, prioridad o proyecto, iniciar o parar el cronómetro, vincular, añadir una subtarea, comentar, copiar el enlace, duplicar, guardar como plantilla y borrar, todo con el teclado.
+- Progreso en las tarjetas del kanban: subtareas cerradas, casillas marcadas de la descripción, horas sobre el estimado (en coral si se pasa) y «Bloqueada» si la bloquea una tarea abierta.
+- Vista de lista (`?vista=lista`): tabla con columnas ordenables (clave, título, estado, prioridad, proyecto, fechas, estimado y horas) y estado, prioridad y fecha fin editables en la celda.
+- Cambios en bloque en la lista: se marcan varias tareas (o todas) y se les cambia a la vez el estado, la prioridad o el proyecto, se añade o quita un tag, o se mandan a la papelera.
+- Vista de backlog (`?vista=backlog`): las tareas abiertas en «Esta semana» y «Backlog», ordenadas a mano arrastrando o con botones (también con el teclado). Lo planificado en semanas anteriores sin terminar sigue en «Esta semana».
+- Tareas recurrentes: «Repetir» en la tarea (cada día, semana, 2 semanas, mes o año). Al pasarla a Realizada se crea la siguiente con las fechas desplazadas y las casillas sin marcar, y la serie sigue en la nueva.
+- Plantillas: una tarea se guarda como plantilla (título, descripción, prioridad, estimado, tags y subtareas) y se usa en «Nueva tarea», que crea también sus subtareas. Se gestionan en Ajustes.
+- Papelera: borrar una tarea la guarda 30 días con sus comentarios y horas; desde Ajustes se restaura (con sus vínculos y su padre, si siguen existiendo) o se borra definitivamente.
+- Copia de seguridad en Ajustes: descargar todo en JSON (proyectos, tags, tareas con comentarios, horas y plantillas) o las tareas en CSV, e importar una copia, que solo crea lo que no existe.
+
+### Cambiado
+
+- Borrar una tarea (desde la tarea, el kanban o la lista) la manda a la papelera en lugar de borrarla para siempre.
+- La baja de la cuenta borra también las plantillas y la papelera.
+
 ## [1.0.2] - 2026-11-09
 
 ### Añadido

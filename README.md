@@ -9,7 +9,7 @@
 [![Autor: caldeix](https://img.shields.io/badge/autor-caldeix-181717?logo=github&logoColor=white)](https://github.com/caldeix)
 ![© 2026 Caldeix](https://img.shields.io/badge/%C2%A9_2026-Caldeix-D4AF37)
 
-![Version](https://img.shields.io/badge/Version-1.0.2-2563EB.svg)
+![Version](https://img.shields.io/badge/Version-1.1.0-2563EB.svg)
 ![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
@@ -49,6 +49,15 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 - **Actividad** — Historial de cada tarea: alta, estado, fechas, estimado, prioridad, proyecto y título, con el valor anterior y el nuevo
 - **Filtros** — Estados visibles, periodo, orden, tags (cualquiera o todos), prioridad, atrasadas y sin fecha. Se guardan en la cuenta y valen para todos los dispositivos
 - **Estadísticas** — Por semana, mes, últimos 30 días o año: horas por día, semana, proyecto y tag, mapa de calor y acierto de las estimaciones, con cada gráfico también en tabla
+- **Para hoy** — Pantalla con lo atrasado, lo de hoy, lo que está en curso y lo último que has tocado
+- **Vista de lista** — Tabla con columnas ordenables, estado, prioridad y fecha fin editables en la celda, y cambios en bloque (estado, prioridad, proyecto, tags o papelera) sobre varias tareas a la vez
+- **Backlog** — Orden manual arrastrando o con el teclado, y planificación en «Esta semana»
+- **Paleta de comandos** — Pulsa «.» dentro de una tarea para cambiar estado, prioridad o proyecto, cronometrar, vincular, duplicar o guardarla como plantilla sin tocar el ratón
+- **Claves enlazadas** — Escribir `EST-12` en una descripción o comentario crea un enlace con el color de su estado, y el editor autocompleta las claves
+- **Tareas recurrentes** — Cada día, semana, mes o año: al terminar una, se crea la siguiente
+- **Plantillas** — Guarda una tarea con sus subtareas como plantilla y crea otras iguales en un clic
+- **Papelera** — Las tareas borradas se pueden restaurar durante 30 días
+- **Copia de seguridad** — Descarga todo en JSON o las tareas en CSV, e importa una copia sin pisar lo que ya tienes
 - **Búsqueda y atajos** — `Ctrl+K` busca tareas por clave o título y proyectos. Atajos: `N` nueva tarea, `C` calendario, `K` kanban y `/` buscar
 - **Duplicar tareas** — Copia título, fechas, estimado, descripción, tags y enlaces; la copia nace Pendiente y sin horas
 - **Cuentas con aprobación** — Correo y contraseña (con verificación de correo) o Google. Las cuentas nuevas esperan a que el administrador las apruebe, y él puede bloquearlas o reactivarlas desde su panel
@@ -61,6 +70,16 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 ---
 
 ## Changelog
+
+### v1.1.0 — Más cómoda, al estilo de Jira
+
+- **Para hoy** — Atrasadas, las de hoy, en curso y las últimas tocadas, en una sola pantalla
+- **Lista y backlog** — Tabla ordenable con edición en la celda y cambios en bloque; backlog con orden manual y «Esta semana»
+- **Teclado** — Paleta de comandos con «.» en la tarea y autocompletado de claves al escribir `EST-`
+- **Claves enlazadas** — `EST-12` en el texto lleva a la tarea y muestra su estado
+- **Kanban más informativo** — Subtareas, casillas, horas y bloqueos en cada tarjeta
+- **Recurrentes y plantillas** — Tareas que se repiten solas y plantillas con subtareas
+- **Papelera y copia de seguridad** — Lo borrado se restaura durante 30 días; exportar e importar en JSON o CSV
 
 ### v1.0.2 — Relaciones más cómodas
 
