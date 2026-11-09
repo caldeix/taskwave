@@ -12,6 +12,7 @@ import NewTaskDialog from '@/components/tasks/NewTaskDialog.vue'
 import StartedStrip from '@/components/tasks/StartedStrip.vue'
 import FiltersBar from '@/components/filters/FiltersBar.vue'
 import KanbanBoard from '@/components/kanban/KanbanBoard.vue'
+import BacklogBoard from '@/components/backlog/BacklogBoard.vue'
 import BulkBar from '@/components/list/BulkBar.vue'
 import TaskTable from '@/components/list/TaskTable.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
@@ -143,6 +144,16 @@ const { tasks: boardTasks } = useLiveTasks(() =>
     : null,
 )
 
+// ---- Backlog (v1.1.0, idea 8): solo las abiertas ----
+const { tasks: backlogTasks } = useLiveTasks(() =>
+  view.value === 'backlog' && uid.value && taskScope.value
+    ? {
+        key: `backlog:${uid.value}:${scopeKey.value}`,
+        queries: [openQuery(db, uid.value, taskScope.value)],
+      }
+    : null,
+)
+
 // ---- Filtros (step-13): se aplican en el cliente sobre lo ya leído ----
 const filtersStore = useFiltersStore()
 /** En el calendario, el periodo es el mes visible y «Sin fecha» no aplica (D-39). */
@@ -161,6 +172,13 @@ const undatedVisible = computed(() =>
 )
 const boardVisible = computed(() =>
   applyFilters(boardTasks.value, filtersStore.filters, { today: today.value }),
+)
+/** En el backlog no hay periodo ni orden (el orden es el manual), pero sí el resto de filtros. */
+const backlogVisible = computed(() =>
+  applyFilters(backlogTasks.value, calendarFilters.value, {
+    today: today.value,
+    ignorePeriod: true,
+  }),
 )
 function kanbanSorter(tasks: Task[]): Task[] {
   return sortTasks(tasks, filtersStore.filters.sort, filtersStore.filters.sortDir)
@@ -497,6 +515,9 @@ async function confirmDelete(): Promise<void> {
           @clear="selected = []"
         />
       </template>
+
+      <!-- Backlog (v1.1.0, idea 8) -->
+      <BacklogBoard v-else-if="view === 'backlog'" :tasks="backlogVisible" :today="today" />
 
       <!-- Kanban (step-12) -->
       <KanbanBoard

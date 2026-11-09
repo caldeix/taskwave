@@ -432,3 +432,20 @@ async function applyRelation(
     write(otherRef, before.other, after.other)
   })
 }
+
+/**
+ * Orden manual y semana planificada del backlog (v1.1.0, D-8): varias tareas en un lote, con su
+ * `updatedAt` del servidor. Sin conexión se guarda en la caché y se sube al volver.
+ */
+export async function updateBacklog(
+  db: Firestore,
+  uid: string,
+  patches: { id: string; rank?: number | null; plannedWeek?: string | null }[],
+): Promise<void> {
+  if (!patches.length) return
+  const tasks = tasksCollection(db, uid)
+  const batch = writeBatch(db)
+  for (const { id, ...fields } of patches)
+    batch.update(doc(tasks, id), { ...fields, updatedAt: serverTimestamp() })
+  await batch.commit()
+}

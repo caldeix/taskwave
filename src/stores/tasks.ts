@@ -4,6 +4,7 @@ import {
   deleteTask,
   changeRelation,
   linkTasks,
+  updateBacklog,
   moveTaskToProject,
   setTaskParent,
   unlinkTasks,
@@ -95,6 +96,13 @@ export const useTasksStore = defineStore('tasks', () => {
     return unlinkTasks(db, requireUid(), task.id, link)
   }
 
+  /** Orden y semana planificada del backlog, en un lote (v1.1.0). */
+  function saveBacklog(
+    patches: { id: string; rank?: number | null; plannedWeek?: string | null }[],
+  ): Promise<void> {
+    return updateBacklog(db, requireUid(), patches)
+  }
+
   /** Cambia el tipo de la relación de `task` con `otherId` (v1.0.2). */
   function changeRelationKind(
     task: Task,
@@ -148,6 +156,7 @@ export const useTasksStore = defineStore('tasks', () => {
     unlink,
     setParent,
     changeRelationKind,
+    saveBacklog,
     comment,
     editCommentBody,
     removeComment,

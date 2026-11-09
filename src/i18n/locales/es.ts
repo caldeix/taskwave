@@ -622,6 +622,20 @@ const es = {
         'Se borrará {n} tarea, con sus comentarios y horas. | Se borrarán {n} tareas, con sus comentarios y horas.',
     },
   },
+  backlog: {
+    sections: { week: 'Esta semana', backlog: 'Backlog' },
+    weekHint: 'Incluye lo planificado antes y aún sin terminar.',
+    empty: {
+      week: 'Nada planificado para esta semana. Arrastra tareas aquí o usa el botón del calendario.',
+      backlog: 'El backlog está vacío.',
+    },
+    up: 'Subir {key}',
+    down: 'Bajar {key}',
+    plan: 'Pasar {key} a esta semana',
+    unplan: 'Devolver {key} al backlog',
+    planned: '{key} planificada para esta semana.',
+    unplanned: '{key} vuelve al backlog.',
+  },
   kanban: {
     progress: {
       blocked: 'Bloqueada',
