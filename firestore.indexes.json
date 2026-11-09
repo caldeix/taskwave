@@ -84,6 +84,14 @@
         { "fieldPath": "date", "order": "DESCENDING" },
         { "fieldPath": "startedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "projectId", "order": "ASCENDING" },
+        { "fieldPath": "recurrence", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

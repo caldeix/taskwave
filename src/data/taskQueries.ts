@@ -60,6 +60,19 @@ export function taskByKeyQuery(db: Firestore, uid: string, key: string): Query {
   return query(tasksCollection(db, uid), where('key', '==', key), limit(1))
 }
 
+/**
+ * Tareas con recurrencia del ámbito (repeticiones fantasma del calendario, v1.2.0). Solo las que
+ * tienen `recurrence`: al terminar una, la recurrencia pasa a la siguiente y la antigua queda en
+ * `null`, así que salen pocas. Las cerradas se descartan en la app.
+ */
+export function recurringQuery(db: Firestore, uid: string, scope: TaskScope): Query {
+  return query(
+    tasksCollection(db, uid),
+    ...scopeConstraints(scope),
+    where('recurrence', '!=', null),
+  )
+}
+
 /** Las últimas tareas tocadas (panel «Para hoy», v1.1.0): por fecha de actualización. */
 export function recentQuery(db: Firestore, uid: string, max = 8): Query {
   return query(tasksCollection(db, uid), orderBy('updatedAt', 'desc'), limit(max))
