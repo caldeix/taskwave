@@ -60,6 +60,15 @@ export function taskByKeyQuery(db: Firestore, uid: string, key: string): Query {
   return query(tasksCollection(db, uid), where('key', '==', key), limit(1))
 }
 
+/** Tareas por clave, en consultas de 30 como máximo (claves enlazadas en el markdown, v1.1.0). */
+export function tasksByKeysQueries(db: Firestore, uid: string, keys: string[]): Query[] {
+  const unique = [...new Set(keys)].sort()
+  const queries: Query[] = []
+  for (let i = 0; i < unique.length; i += 30)
+    queries.push(query(tasksCollection(db, uid), where('key', 'in', unique.slice(i, i + 30))))
+  return queries
+}
+
 /** Tareas sin fecha de inicio (panel «Sin fecha», D-19). */
 export function undatedQuery(db: Firestore, uid: string, scope: TaskScope): Query {
   return query(tasksCollection(db, uid), ...scopeConstraints(scope), where('startDate', '==', null))

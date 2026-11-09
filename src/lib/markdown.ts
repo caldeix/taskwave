@@ -44,12 +44,67 @@ md.core.ruler.after('inline', 'task-lists', (state) => {
   }
 })
 
-// Enlaces externos en otra pestaña y sin pasar el origen.
-DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-  if (node.tagName === 'A') {
-    node.setAttribute('target', '_blank')
-    node.setAttribute('rel', 'noopener noreferrer nofollow')
+/**
+ * Claves de tarea enlazadas solas (v1.1.0, D-3): `EST-12` en el texto pasa a ser un enlace a la
+ * tarea con `data-task-key`, para pintar su estado. No se toca el código ni el texto que ya está
+ * dentro de un enlace.
+ */
+export const TASK_KEY_IN_TEXT = /(?<![A-Za-z0-9-])([A-Z][A-Z0-9]{1,5}-[0-9]{1,7})(?![A-Za-z0-9-])/g
+
+/** URL absoluta de una tarea (DOMPurify solo deja enlaces `http(s)`). */
+export function taskUrl(key: string): string {
+  const origin = typeof location === 'undefined' ? 'http://localhost' : location.origin
+  return `${origin}${import.meta.env.BASE_URL}t/${key}`
+}
+
+md.core.ruler.push('task-keys', (state) => {
+  type InlineToken = NonNullable<(typeof state.tokens)[number]['children']>[number]
+  const text = (content: string): InlineToken => {
+    const token = new state.Token('text', '', 0)
+    token.content = content
+    return token
   }
+  for (const block of state.tokens) {
+    if (block.type !== 'inline' || !block.children) continue
+    const out: InlineToken[] = []
+    let insideLink = 0
+    for (const token of block.children) {
+      if (token.type === 'link_open') insideLink += 1
+      if (token.type === 'link_close') insideLink -= 1
+      TASK_KEY_IN_TEXT.lastIndex = 0
+      if (token.type !== 'text' || insideLink > 0 || !TASK_KEY_IN_TEXT.test(token.content)) {
+        out.push(token)
+        continue
+      }
+      // `matchAll` copia `lastIndex`, que `test` acaba de mover.
+      TASK_KEY_IN_TEXT.lastIndex = 0
+      let last = 0
+      for (const match of token.content.matchAll(TASK_KEY_IN_TEXT)) {
+        const key = match[1]!
+        const at = match.index ?? 0
+        if (at > last) out.push(text(token.content.slice(last, at)))
+        const open = new state.Token('link_open', 'a', 1)
+        open.attrSet('href', taskUrl(key))
+        open.attrSet('class', 'md-task-key')
+        open.attrSet('data-task-key', key)
+        out.push(open, text(key), new state.Token('link_close', 'a', -1))
+        last = at + key.length
+      }
+      if (last < token.content.length) out.push(text(token.content.slice(last)))
+    }
+    block.children = out
+  }
+})
+
+// Enlaces externos en otra pestaña y sin pasar el origen. Las claves de tarea abren en la app.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName !== 'A') return
+  if (node.getAttribute('data-task-key')) {
+    node.removeAttribute('target')
+    return
+  }
+  node.setAttribute('target', '_blank')
+  node.setAttribute('rel', 'noopener noreferrer nofollow')
 })
 
 const SANITIZE = {
@@ -91,6 +146,7 @@ const SANITIZE = {
     'type',
     'checked',
     'data-line',
+    'data-task-key',
     'start',
     'align',
   ],
@@ -99,7 +155,7 @@ const SANITIZE = {
   ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i,
   // DOMPurify aplica esa regla a todos los atributos salvo a los «seguros»: sin esto quitaría
   // `type="checkbox"` y `data-line` de las casillas.
-  ADD_URI_SAFE_ATTR: ['type', 'data-line', 'start', 'align'],
+  ADD_URI_SAFE_ATTR: ['type', 'data-line', 'data-task-key', 'start', 'align'],
 }
 
 /** Markdown → HTML seguro para `v-html`. */

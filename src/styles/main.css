@@ -135,6 +135,35 @@
   .md-prose a {
     @apply font-medium text-blue-600 underline-offset-2 hover:underline dark:text-blue-400;
   }
+  /* Claves de tarea enlazadas (v1.1.0): un punto con el color de su estado */
+  .md-prose a.md-task-key {
+    @apply inline-flex items-baseline gap-1 rounded bg-gray-100 px-1 font-bold no-underline hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700;
+  }
+  .md-prose a.md-task-key::before {
+    content: '';
+    @apply inline-block h-2 w-2 shrink-0 self-center rounded-full bg-gray-300 dark:bg-gray-600;
+  }
+  .md-prose a.md-task-key[data-status='pending']::before {
+    @apply bg-violet-500;
+  }
+  .md-prose a.md-task-key[data-status='in_progress']::before {
+    @apply bg-blue-500;
+  }
+  .md-prose a.md-task-key[data-status='paused']::before {
+    @apply bg-mustard-500;
+  }
+  .md-prose a.md-task-key[data-status='done']::before {
+    @apply bg-emerald-500;
+  }
+  .md-prose a.md-task-key[data-status='discarded']::before {
+    @apply bg-gray-300;
+  }
+  .md-prose a.md-task-key[data-status='ko']::before {
+    @apply bg-coral-500;
+  }
+  .md-prose a.md-task-key:is([data-status='done'], [data-status='discarded']) {
+    @apply line-through;
+  }
   .md-prose code {
     @apply rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em] dark:bg-gray-800;
   }

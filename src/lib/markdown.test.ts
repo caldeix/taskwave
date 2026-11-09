@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { renderMarkdown, toggleChecklistLine } from './markdown'
+import { renderMarkdown, taskUrl, toggleChecklistLine } from './markdown'
 
 describe('renderMarkdown', () => {
   it('formatea markdown habitual', () => {
@@ -89,5 +89,30 @@ describe('toggleChecklistLine', () => {
 
   it('cambiar dos veces deja el texto como estaba', () => {
     expect(toggleChecklistLine(toggleChecklistLine(source, 2), 2)).toBe(source)
+  })
+})
+
+describe('claves de tarea enlazadas (v1.1.0)', () => {
+  it('enlaza las claves del texto a la tarea, sin abrir otra pestaña', () => {
+    const html = renderMarkdown('Depende de EST-12 y de INB-3.')
+    expect(html).toContain(`href="${taskUrl('EST-12')}"`)
+    expect(html).toContain('data-task-key="EST-12"')
+    expect(html).toContain('data-task-key="INB-3"')
+    expect(html).toContain('class="md-task-key"')
+    expect(html).not.toMatch(/data-task-key="EST-12"[^>]*target=/)
+    expect(html).toContain('Depende de <a')
+  })
+
+  it('no toca el código, los enlaces ni lo que no es una clave', () => {
+    const html = renderMarkdown('`EST-12` [ver EST-13](https://x.com) est-14 E-15 ABCDEFG-1')
+    expect(html).not.toContain('data-task-key="EST-12"')
+    expect(html).not.toContain('data-task-key="EST-13"')
+    expect(html).not.toContain('data-task-key')
+  })
+
+  it('una clave en una lista de casillas también se enlaza', () => {
+    const html = renderMarkdown('- [ ] revisar EST-7')
+    expect(html).toContain('data-task-key="EST-7"')
+    expect(html).toContain('class="md-task"')
   })
 })
