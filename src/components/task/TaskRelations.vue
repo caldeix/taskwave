@@ -1,18 +1,30 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Link2, Plus } from 'lucide-vue-next'
+import { Link2 } from 'lucide-vue-next'
 import LinkTaskForm from './LinkTaskForm.vue'
 import RelatedTaskRow from './RelatedTaskRow.vue'
+import SubtaskInput from './SubtaskInput.vue'
+import { countSubtasks } from '@/data/taskQueries'
 import { formatHours } from '@/domain/duration'
-import { groupLinks, type SubtaskTotals } from '@/domain/links'
+import {
+  MAX_LINKS,
+  checkRelationChange,
+  groupLinks,
+  type RelationKind,
+  type SubtaskTotals,
+} from '@/domain/links'
 import type { Task, TaskLink } from '@/domain/task'
+import { db } from '@/lib/firebase'
+import { useAuthStore } from '@/stores/auth'
 import { useTasksStore } from '@/stores/tasks'
 import { useToastsStore } from '@/stores/toasts'
 
 /**
  * Vínculos y subtareas de la vista de tarea (step-16, D-32, D-41). Los vínculos se ven en las
  * dos tareas; las subtareas son de un solo nivel, se crean aquí mismo y suman sus horas.
+ * Desde la v1.0.2, el tipo de cada relación se cambia en su fila, «Sin vínculos» abre el
+ * buscador y el alta de subtareas propone también tareas existentes.
  */
 const props = defineProps<{
   task: Task
@@ -24,6 +36,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 const tasksStore = useTasksStore()
 const toasts = useToastsStore()
 
@@ -50,28 +63,39 @@ async function detach(taskId: string, key: string): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------- nueva subtarea
-const newTitle = ref('')
-const creating = ref(false)
-async function createSubtask(): Promise<void> {
-  const title = newTitle.value.trim()
-  if (!title || creating.value) return
-  creating.value = true
+// ------------------------------------------------- cambiar el tipo de una relación
+/** Id de la tarea cuya relación se está guardando. */
+const changing = ref<string | null>(null)
+
+async function changeKind(
+  target: Task | null,
+  from: RelationKind,
+  to: RelationKind,
+): Promise<void> {
+  const uid = authStore.user?.uid
+  if (!target || !uid || changing.value) return
+  changing.value = target.id
   try {
-    const { key } = await tasksStore.create({
-      title,
-      projectId: props.task.projectId,
-      startDate: null,
-      endDate: null,
-      priority: props.task.priority,
-      parentId: props.task.id,
-    })
-    newTitle.value = ''
-    toasts.show(t('subtasks.created', { key }))
+    // Para que `target` pase a ser subtarea hay que saber si tiene subtareas.
+    const targetSubtasks = to === 'child' ? await countSubtasks(db, uid, target.id) : 0
+    const problem = checkRelationChange(
+      props.task,
+      target,
+      from,
+      to,
+      props.subtasks.length,
+      targetSubtasks,
+    )
+    if (problem) {
+      toasts.show(t(`relations.errors.${problem}`, { key: target.key, max: MAX_LINKS }), 'error')
+      return
+    }
+    await tasksStore.changeRelationKind(props.task, target.id, from, to)
+    toasts.show(t('relations.changed', { key: target.key, kind: t(`relations.kinds.${to}`) }))
   } catch {
-    toasts.show(t('subtasks.createFailed'), 'error')
+    toasts.show(t('relations.failed'), 'error')
   } finally {
-    creating.value = false
+    changing.value = null
   }
 }
 
@@ -106,8 +130,11 @@ const addButton =
         <RelatedTaskRow
           :task="parent"
           :loading="loading"
+          kind="parent"
+          :busy="changing === task.parentId"
           :remove-label="t('subtasks.detachSelf')"
           @remove="detach(task.id, task.key)"
+          @change-kind="changeKind(parent, 'parent', $event)"
         />
       </ul>
     </div>
@@ -120,18 +147,26 @@ const addButton =
           :key="id"
           :task="byId.get(id) ?? null"
           :loading="loading"
+          :kind="group.type"
+          :busy="changing === id"
           :remove-label="t('relations.remove', { key: keyOf(id) })"
           @remove="unlink({ type: group.type, taskId: id })"
+          @change-kind="changeKind(byId.get(id) ?? null, group.type, $event)"
         />
       </ul>
     </div>
 
-    <p
+    <!-- Sin vínculos: pulsar abre el buscador, igual que «Vincular» -->
+    <button
       v-if="!task.parentId && !groups.length && !linking"
-      class="m-0 font-text text-sm text-gray-500 dark:text-gray-400"
+      type="button"
+      class="cursor-text self-stretch rounded-lg border-0 bg-transparent px-2 py-1.5 text-left font-text text-sm text-gray-500 transition hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-gray-400 dark:hover:bg-gray-800"
+      :title="t('relations.emptyHint')"
+      @click="linking = true"
     >
       {{ t('relations.empty') }}
-    </p>
+      <span class="sr-only">{{ t('relations.emptyHint') }}</span>
+    </button>
   </section>
 
   <!-- Subtareas (un solo nivel: una subtarea no tiene esta sección) -->
@@ -153,22 +188,14 @@ const addButton =
         :key="sub.id"
         :task="sub"
         show-hours
+        kind="child"
+        :busy="changing === sub.id"
         :remove-label="t('subtasks.detach', { key: sub.key })"
         @remove="detach(sub.id, sub.key)"
+        @change-kind="changeKind(sub, 'child', $event)"
       />
     </ul>
 
-    <form class="flex items-center gap-2" @submit.prevent="createSubtask">
-      <Plus class="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" />
-      <input
-        v-model="newTitle"
-        type="text"
-        maxlength="200"
-        :aria-label="t('subtasks.add')"
-        :placeholder="t('subtasks.addPlaceholder')"
-        :disabled="creating"
-        class="h-9 min-w-0 flex-1 rounded-lg border-0 bg-transparent px-2 font-text text-sm text-gray-800 transition placeholder:text-gray-500 hover:bg-gray-100 focus:bg-gray-100 focus:outline-2 focus:outline-blue-500 dark:text-white dark:placeholder:text-gray-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
-      />
-    </form>
+    <SubtaskInput :task="task" :subtasks="subtasks" />
   </section>
 </template>
