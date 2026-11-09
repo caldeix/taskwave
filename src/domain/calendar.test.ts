@@ -3,6 +3,7 @@ import {
   formatMonthParam,
   gridRange,
   hiddenPerDay,
+  ghostsOfDay,
   layoutWeek,
   monthGrid,
   moveDates,
@@ -145,5 +146,47 @@ describe('moveDates (D-21)', () => {
       startDate: '2026-11-09',
       endDate: null,
     })
+  })
+})
+
+describe('repeticiones fantasma en la semana (v1.2.0)', () => {
+  const week = [
+    '2026-11-02',
+    '2026-11-03',
+    '2026-11-04',
+    '2026-11-05',
+    '2026-11-06',
+    '2026-11-07',
+    '2026-11-08',
+  ]
+
+  it('van detrás de las reales: ocupan los huecos y nunca las desplazan', () => {
+    const real = [task('A', '2026-11-02', '2026-11-04'), task('B', '2026-11-03')]
+    const ghost = { ...task('G', '2026-11-03'), id: 'G~1' }
+    const segs = layoutWeek(week, real, [ghost])
+    const lane = (key: string) => segs.find((s) => s.task.key === key)!.lane
+    expect(lane('A')).toBe(0)
+    expect(lane('B')).toBe(1)
+    expect(lane('G')).toBe(2)
+    expect(segs.find((s) => s.task.key === 'G')!.ghost).toBe(true)
+    expect(segs.find((s) => s.task.key === 'A')!.ghost).toBe(false)
+  })
+
+  it('en un día libre, la fantasma usa el primer carril', () => {
+    const segs = layoutWeek(
+      week,
+      [task('A', '2026-11-02')],
+      [{ ...task('G', '2026-11-05'), id: 'G~1' }],
+    )
+    expect(segs.find((s) => s.task.key === 'G')!.lane).toBe(0)
+  })
+
+  it('si no caben cuentan en «+N más» y salen aparte en la lista del día', () => {
+    const real = [task('A', '2026-11-02')]
+    const ghosts = [1, 2, 3].map((n) => ({ ...task(`G${n}`, '2026-11-02'), id: `G~${n}` }))
+    const segs = layoutWeek(week, real, ghosts)
+    expect(hiddenPerDay(segs, 3)[0]).toBe(1)
+    expect(tasksOfDay('2026-11-02', segs).map((t) => t.key)).toEqual(['A'])
+    expect(ghostsOfDay('2026-11-02', segs).map((t) => t.key)).toEqual(['G1', 'G2', 'G3'])
   })
 })

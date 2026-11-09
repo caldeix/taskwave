@@ -48,3 +48,15 @@ describe('agendaDays (D-24)', () => {
     expect(days[0]!.tasks.map((t) => t.key)).toEqual(['EST-2', 'EST-10', 'EST-9'])
   })
 })
+
+describe('repeticiones fantasma en la agenda (v1.2.0)', () => {
+  it('van aparte y un día solo con fantasmas también sale', () => {
+    const month = new Date(2026, 10, 1)
+    const real = taskFromData('A', { key: 'EST-1', startDate: '2026-11-09' })
+    const ghost = { ...real, id: 'A~1', startDate: '2026-11-16' }
+    const days = agendaDays(month, [real], '2026-11-09', {}, [ghost])
+    expect(days.map((d) => d.date)).toEqual(['2026-11-09', '2026-11-16'])
+    expect(days[1]!.tasks).toEqual([])
+    expect(days[1]!.ghosts.map((g) => g.id)).toEqual(['A~1'])
+  })
+})

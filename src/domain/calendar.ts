@@ -60,6 +60,8 @@ export interface WeekSegment {
   /** La tarea viene de la semana anterior o sigue en la siguiente (para redondear las puntas). */
   continuesBefore: boolean
   continuesAfter: boolean
+  /** Repetición futura de una tarea recurrente, que aún no existe (v1.2.0). */
+  ghost: boolean
 }
 
 const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 } as const
@@ -67,42 +69,51 @@ const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 } as const
 /**
  * Reparte las tareas de una semana en carriles. Primero las que empiezan antes y las más largas
  * (como Google Calendar), luego por prioridad y clave, para que el orden sea estable.
+ * Las repeticiones fantasma (`ghosts`, v1.2.0) se reparten después, en los huecos que dejan las
+ * reales: nunca desplazan una tarea real a «+N más».
  */
-export function layoutWeek(week: DayKey[], tasks: Task[]): WeekSegment[] {
+export function layoutWeek(week: DayKey[], tasks: Task[], ghosts: Task[] = []): WeekSegment[] {
   const first = week[0]!
   const last = week[6]!
-  const pieces = tasks
-    .filter((t) => t.startDate && t.startDate <= last && (t.endDate ?? t.startDate) >= first)
-    .map((task) => {
-      const start = task.startDate! < first ? first : task.startDate!
-      const end =
-        (task.endDate ?? task.startDate!) > last ? last : (task.endDate ?? task.startDate!)
-      const col = week.indexOf(start)
-      const span = week.indexOf(end) - col + 1
-      return {
-        task,
-        col,
-        span,
-        continuesBefore: task.startDate! < first,
-        continuesAfter: (task.endDate ?? task.startDate!) > last,
-      }
-    })
-    .sort(
-      (a, b) =>
-        a.col - b.col ||
-        b.span - a.span ||
-        PRIORITY_ORDER[a.task.priority] - PRIORITY_ORDER[b.task.priority] ||
-        a.task.key.localeCompare(b.task.key, 'es', { numeric: true }),
-    )
+  const piecesOf = (list: Task[], ghost: boolean) =>
+    list
+      .filter((t) => t.startDate && t.startDate <= last && (t.endDate ?? t.startDate) >= first)
+      .map((task) => {
+        const start = task.startDate! < first ? first : task.startDate!
+        const end =
+          (task.endDate ?? task.startDate!) > last ? last : (task.endDate ?? task.startDate!)
+        const col = week.indexOf(start)
+        const span = week.indexOf(end) - col + 1
+        return {
+          task,
+          col,
+          span,
+          continuesBefore: task.startDate! < first,
+          continuesAfter: (task.endDate ?? task.startDate!) > last,
+          ghost,
+        }
+      })
+      .sort(
+        (a, b) =>
+          a.col - b.col ||
+          b.span - a.span ||
+          PRIORITY_ORDER[a.task.priority] - PRIORITY_ORDER[b.task.priority] ||
+          a.task.key.localeCompare(b.task.key, 'es', { numeric: true }),
+      )
 
-  // Cada carril guarda la última columna ocupada.
-  const laneEnds: number[] = []
-  return pieces.map((piece) => {
-    let lane = laneEnds.findIndex((end) => end < piece.col)
-    if (lane === -1) lane = laneEnds.length
-    laneEnds[lane] = piece.col + piece.span - 1
+  // Cada carril marca sus días ocupados; cada barra va al primer carril libre en sus días.
+  const lanes: boolean[][] = []
+  const place = (piece: Omit<WeekSegment, 'lane'>): WeekSegment => {
+    const cols = Array.from({ length: piece.span }, (_, i) => piece.col + i)
+    let lane = lanes.findIndex((used) => cols.every((c) => !used[c]))
+    if (lane === -1) {
+      lane = lanes.length
+      lanes.push(Array.from({ length: 7 }, () => false))
+    }
+    for (const c of cols) lanes[lane]![c] = true
     return { ...piece, lane }
-  })
+  }
+  return [...piecesOf(tasks, false).map(place), ...piecesOf(ghosts, true).map(place)]
 }
 
 /**
@@ -112,16 +123,28 @@ export function layoutWeek(week: DayKey[], tasks: Task[]): WeekSegment[] {
 export function hiddenPerDay(segments: WeekSegment[], maxLanes: number): number[] {
   const hidden = Array.from({ length: 7 }, () => 0)
   for (const s of segments) {
+    // También las fantasma que no caben, para que no se pierdan (salen en la lista del día).
     if (s.lane < maxLanes) continue
     for (let c = s.col; c < s.col + s.span; c++) hidden[c]!++
   }
   return hidden
 }
 
+/** Repeticiones fantasma de un día (en la lista de «+N más», debajo de las reales; v1.2.0). */
+export function ghostsOfDay(day: DayKey, segments: WeekSegment[]): Task[] {
+  return segments
+    .filter(
+      (s) => s.ghost && s.task.startDate! <= day && (s.task.endDate ?? s.task.startDate!) >= day,
+    )
+    .sort((a, b) => a.lane - b.lane)
+    .map((s) => s.task)
+}
+
 /** Tareas de un día concreto (para el desplegable de «+N más»), en el mismo orden que la rejilla. */
 export function tasksOfDay(day: DayKey, segments: WeekSegment[]): Task[] {
   return segments
     .filter((s) => {
+      if (s.ghost) return false
       const start = s.task.startDate!
       const end = s.task.endDate ?? start
       return start <= day && end >= day

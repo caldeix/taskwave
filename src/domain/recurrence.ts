@@ -1,5 +1,6 @@
 import { addDays, addMonths, addWeeks, addYears, differenceInCalendarDays } from 'date-fns'
-import { fromDayKey, toDayKey, type DayKey } from './dates'
+import { fromDayKey, toDayKey, type DayKey, type DayRange } from './dates'
+import { isClosedStatus } from './status'
 import type { NewTaskInput } from './taskCreate'
 import type { Recurrence, Task } from './task'
 
@@ -68,4 +69,34 @@ export function nextOccurrenceInput(task: Task, today: DayKey): NewTaskInput | n
     parentId: task.parentId,
     recurrence: { ...task.recurrence },
   }
+}
+
+// ------------------------------------------------- repeticiones «fantasma» (v1.2.0)
+
+/** Separador del id de una repetición fantasma: `<id de la tarea>~<n>`. */
+export const GHOST_SEPARATOR = '~'
+const MAX_GHOSTS_PER_TASK = 60
+
+/**
+ * Próximas repeticiones de las tareas abiertas con recurrencia que caen en `range`, para verlas
+ * en el calendario antes de que existan (v1.2.0). Cada una es una copia de la tarea con las
+ * fechas de esa repetición (la misma duración) y el id `<id>~<n>`; la propia tarea no se incluye.
+ * Las fechas siguen la misma regla que al crear la siguiente (`nextDates`): desde las de la tarea,
+ * o desde hoy si no tiene.
+ */
+export function ghostOccurrences(tasks: Task[], range: DayRange, today: DayKey): Task[] {
+  const ghosts: Task[] = []
+  for (const task of tasks) {
+    const r = task.recurrence
+    if (!r || isClosedStatus(task.status)) continue
+    let current: Pick<Task, 'startDate' | 'endDate'> = task
+    for (let n = 1; n <= MAX_GHOSTS_PER_TASK; n++) {
+      const next = nextDates(current, r, today)
+      if (next.startDate > range.to) break
+      if ((next.endDate ?? next.startDate) >= range.from)
+        ghosts.push({ ...task, ...next, id: `${task.id}${GHOST_SEPARATOR}${n}` })
+      current = next
+    }
+  }
+  return ghosts
 }
