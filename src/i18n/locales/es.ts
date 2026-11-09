@@ -90,6 +90,7 @@ const es = {
     unlinked: 'Vínculo con {key} quitado.',
     kindOf: 'Tipo de relación con {key}',
     changed: 'Ahora esta tarea {kind} {key}.',
+    statusChanged: '{key} pasa a {status}.',
     remove: 'Quitar el vínculo con {key}',
     missing: 'Tarea borrada o no encontrada',
     loading: 'Cargando…',

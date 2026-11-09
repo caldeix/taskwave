@@ -14,6 +14,7 @@ import {
   type RelationKind,
   type SubtaskTotals,
 } from '@/domain/links'
+import type { TaskStatus } from '@/domain/status'
 import type { Task, TaskLink } from '@/domain/task'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from '@/stores/auth'
@@ -99,6 +100,25 @@ async function changeKind(
   }
 }
 
+// ------------------------------------------------- estado de una tarea relacionada
+/** Id de la tarea relacionada cuyo estado se está guardando. */
+const savingStatus = ref<string | null>(null)
+
+async function changeStatus(target: Task | null, status: TaskStatus): Promise<void> {
+  if (!target || savingStatus.value) return
+  savingStatus.value = target.id
+  try {
+    await tasksStore.setStatus(target, status)
+    toasts.show(t('relations.statusChanged', { key: target.key, status: t(`status.${status}`) }))
+  } catch (error) {
+    // Si se cancela el aviso del cronómetro al cerrar, no es un error.
+    if (!(error instanceof Error && error.message === 'timer-stop-failed'))
+      toasts.show(t('taskView.saveFailed'), 'error')
+  } finally {
+    savingStatus.value = null
+  }
+}
+
 const heading = 'm-0 font-text text-sm font-bold text-gray-800 dark:text-white'
 const groupLabel =
   'm-0 px-2 font-text text-xs font-bold tracking-wide text-gray-500 uppercase dark:text-gray-400'
@@ -133,8 +153,10 @@ const addButton =
           kind="parent"
           :busy="changing === task.parentId"
           :remove-label="t('subtasks.detachSelf')"
+          :status-busy="savingStatus === task.parentId"
           @remove="detach(task.id, task.key)"
           @change-kind="changeKind(parent, 'parent', $event)"
+          @change-status="changeStatus(parent, $event)"
         />
       </ul>
     </div>
@@ -150,8 +172,10 @@ const addButton =
           :kind="group.type"
           :busy="changing === id"
           :remove-label="t('relations.remove', { key: keyOf(id) })"
+          :status-busy="savingStatus === id"
           @remove="unlink({ type: group.type, taskId: id })"
           @change-kind="changeKind(byId.get(id) ?? null, group.type, $event)"
+          @change-status="changeStatus(byId.get(id) ?? null, $event)"
         />
       </ul>
     </div>
@@ -191,8 +215,10 @@ const addButton =
         kind="child"
         :busy="changing === sub.id"
         :remove-label="t('subtasks.detach', { key: sub.key })"
+        :status-busy="savingStatus === sub.id"
         @remove="detach(sub.id, sub.key)"
         @change-kind="changeKind(sub, 'child', $event)"
+        @change-status="changeStatus(sub, $event)"
       />
     </ul>
 

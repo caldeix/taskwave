@@ -3,9 +3,10 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeftRight, X } from 'lucide-vue-next'
-import StatusBadge from '@/components/ui/StatusBadge.vue'
+import StatusSelect from './StatusSelect.vue'
 import { formatHours } from '@/domain/duration'
 import { RELATION_KINDS, type RelationKind } from '@/domain/links'
+import type { TaskStatus } from '@/domain/status'
 import type { Task } from '@/domain/task'
 
 /**
@@ -13,6 +14,7 @@ import type { Task } from '@/domain/task'
  * estado y, si se pide, horas. Si ya no existe, lo dice y deja quitar el vínculo.
  * Con `kind`, el tipo de relación se ve en un selector y se puede cambiar (v1.0.2). Si la fila
  * es estrecha (panel lateral abierto), el selector se queda en un icono para no tapar el título.
+ * El estado también se cambia desde la fila, con el mismo badge que la vista de tarea.
  */
 const props = defineProps<{
   task: Task | null
@@ -21,8 +23,13 @@ const props = defineProps<{
   showHours?: boolean
   kind?: RelationKind
   busy?: boolean
+  statusBusy?: boolean
 }>()
-const emit = defineEmits<{ remove: []; changeKind: [kind: RelationKind] }>()
+const emit = defineEmits<{
+  remove: []
+  changeKind: [kind: RelationKind]
+  changeStatus: [status: TaskStatus]
+}>()
 
 function onKindChange(event: Event): void {
   const select = event.target as HTMLSelectElement
@@ -45,7 +52,7 @@ const hours = computed(() => {
 
 <template>
   <li
-    class="group @container flex min-w-0 items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
+    class="group @container relative flex min-w-0 focus-within:z-40 items-center gap-2 rounded-lg px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-800"
   >
     <template v-if="task">
       <span v-if="kind" class="relative inline-flex shrink-0">
@@ -86,10 +93,16 @@ const hours = computed(() => {
       </RouterLink>
       <span
         v-if="showHours"
-        class="hidden shrink-0 font-text text-xs text-gray-500 sm:inline dark:text-gray-400"
+        class="hidden shrink-0 font-text text-xs text-gray-500 @md:inline dark:text-gray-400"
         >{{ hours }}</span
       >
-      <StatusBadge :status="task.status" class="shrink-0" />
+      <StatusSelect
+        compact
+        :status="task.status"
+        :disabled="statusBusy"
+        class="shrink-0"
+        @change="emit('changeStatus', $event)"
+      />
     </template>
     <span v-else class="flex-1 font-text text-sm text-gray-500 italic dark:text-gray-400">
       {{ loading ? t('relations.loading') : t('relations.missing') }}
