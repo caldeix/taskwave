@@ -64,9 +64,12 @@ export const useTasksStore = defineStore('tasks', () => {
     return updateTaskDates(db, requireUid(), task.id, dates, task)
   }
 
-  /** Cambia el estado con los automatismos de D-17 (no hace nada si no cambia). */
-  async function setStatus(task: Task, status: TaskStatus): Promise<void> {
-    if (task.status === status) return
+  /**
+   * Cambia el estado con los automatismos de D-17 (no hace nada si no cambia). Si era recurrente
+   * y pasa a Realizada, devuelve la clave de la siguiente (v1.1.0); si no, `null`.
+   */
+  async function setStatus(task: Task, status: TaskStatus): Promise<string | null> {
+    if (task.status === status) return null
     // Al cerrar una tarea con el cronómetro en marcha, se para y se registran sus horas (D-17).
     const timer = useTimerStore()
     if (isClosedStatus(status) && timer.isRunningOn(task.id) && !(await timer.confirmStop()))
@@ -85,8 +88,10 @@ export const useTasksStore = defineStore('tasks', () => {
         const created = await create(next)
         await updateTaskFields(db, requireUid(), task.id, { recurrence: null })
         useToastsStore().show(i18n.global.t('recurrence.created', { key: created.key }))
+        return created.key
       }
     }
+    return null
   }
 
   /** Autoguardado de campos sueltos desde la vista de tarea (D-46). */
