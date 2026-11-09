@@ -10,6 +10,7 @@ import TagsDialog from '@/components/tags/TagsDialog.vue'
 import TimerButton from '@/components/timer/TimerButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import BaseSelect from '@/components/ui/BaseSelect.vue'
+import { RECURRENCE_PRESETS, parseRecurrenceId, recurrenceId } from '@/domain/recurrence'
 import FormMessage from '@/components/ui/FormMessage.vue'
 import { formatDuration, parseDuration } from '@/domain/duration'
 import { normalizeDates, validateDates, validateWebLink } from '@/domain/taskEdit'
@@ -98,6 +99,13 @@ function saveDates(): void {
   const dates = normalizeDates(start, end)
   if (dates.startDate === props.task.startDate && dates.endDate === props.task.endDate) return
   void save(() => tasksStore.setDates(props.task, dates))
+}
+
+// ---- Repetir (v1.1.0, D-9) ----
+function setRecurrence(id: string): void {
+  const recurrence = parseRecurrenceId(id)
+  if (recurrenceId(recurrence) === recurrenceId(props.task.recurrence)) return
+  void save(() => tasksStore.updateFields(props.task, { recurrence }))
 }
 
 // ---- Estimado (1d 2h 30m) ----
@@ -218,6 +226,19 @@ const label =
       />
     </div>
     <FormMessage v-if="dateError" tone="error">{{ t(dateError) }}</FormMessage>
+
+    <!-- Repetir (v1.1.0, D-9): al pasarla a Realizada se crea la siguiente -->
+    <BaseSelect
+      :model-value="recurrenceId(task.recurrence)"
+      :label="t('recurrence.label')"
+      :disabled="saving"
+      @update:model-value="setRecurrence"
+    >
+      <option value="">{{ t('recurrence.none') }}</option>
+      <option v-for="r in RECURRENCE_PRESETS" :key="recurrenceId(r)" :value="recurrenceId(r)">
+        {{ t(`recurrence.presets.${r.freq}`, r.interval) }}
+      </option>
+    </BaseSelect>
 
     <div class="flex flex-col gap-3">
       <BaseInput

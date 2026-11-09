@@ -21,11 +21,14 @@ import { statusChangePatch } from '@/domain/kanban'
 import { isClosedStatus, type TaskStatus } from '@/domain/status'
 import type { RelationKind } from '@/domain/links'
 import type { Task, TaskLink } from '@/domain/task'
+import { nextOccurrenceInput } from '@/domain/recurrence'
 import { duplicateInput, type NewTaskInput } from '@/domain/taskCreate'
 import type { Entry } from '@/domain/worklog'
 import { db } from '@/lib/firebase'
 import { useAuthStore } from './auth'
 import { useTimerStore } from './timer'
+import { useToastsStore } from './toasts'
+import { i18n } from '@/i18n'
 
 /**
  * Acciones sobre tareas del usuario con sesión (steps 10 a 12). Las lecturas van por
@@ -75,6 +78,15 @@ export const useTasksStore = defineStore('tasks', () => {
       statusChangePatch(task, status, todayKey()),
       task,
     )
+    // Recurrente (v1.1.0, D-9): al terminarla se crea la siguiente, que se queda la recurrencia.
+    if (status === 'done' && task.recurrence && !isClosedStatus(task.status)) {
+      const next = nextOccurrenceInput(task, todayKey())
+      if (next) {
+        const created = await create(next)
+        await updateTaskFields(db, requireUid(), task.id, { recurrence: null })
+        useToastsStore().show(i18n.global.t('recurrence.created', { key: created.key }))
+      }
+    }
   }
 
   /** Autoguardado de campos sueltos desde la vista de tarea (D-46). */

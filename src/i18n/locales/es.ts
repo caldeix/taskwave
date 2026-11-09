@@ -636,6 +636,18 @@ const es = {
     planned: '{key} planificada para esta semana.',
     unplanned: '{key} vuelve al backlog.',
   },
+  recurrence: {
+    label: 'Repetir',
+    none: 'No se repite',
+    presets: {
+      day: 'Cada día | Cada {n} días',
+      week: 'Cada semana | Cada {n} semanas',
+      month: 'Cada mes | Cada {n} meses',
+      year: 'Cada año | Cada {n} años',
+    },
+    created: 'Se ha creado la siguiente: {key}.',
+    badge: 'Se repite',
+  },
   kanban: {
     progress: {
       blocked: 'Bloqueada',
