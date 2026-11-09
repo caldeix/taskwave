@@ -220,11 +220,14 @@ export interface DeleteSummary {
   subtasksDetached: number
   linksCleaned: number
   timerCleared: boolean
+  /** Si se guardó en la papelera (v1.1.0, D-11); no cabe si pasa de ~1 MB (R-2). */
+  trashed: boolean
 }
 
 export type Op =
   | { kind: 'delete'; ref: DocumentReference }
   | { kind: 'update'; ref: DocumentReference; data: Record<string, unknown> }
+  | { kind: 'set'; ref: DocumentReference; data: Record<string, unknown> }
 
 /** Firestore admite como mucho 500 escrituras por lote; se deja margen. */
 const BATCH_SIZE = 450
@@ -234,23 +237,35 @@ export async function commitInBatches(db: Firestore, ops: Op[]): Promise<void> {
     const batch = writeBatch(db)
     for (const op of ops.slice(i, i + BATCH_SIZE)) {
       if (op.kind === 'delete') batch.delete(op.ref)
+      else if (op.kind === 'set') batch.set(op.ref, op.data)
       else batch.update(op.ref, op.data)
     }
     await batch.commit()
   }
 }
 
+/** Tamaño máximo (aprox.) de un documento de la papelera: Firestore admite 1 MiB (R-2). */
+const MAX_TRASH_CHARS = 900_000
+
 /**
- * Borra una tarea de forma definitiva (D-13): sus comentarios, su actividad y sus registros de
- * horas; quita sus vínculos de las otras tareas; sus subtareas quedan sueltas; y si el
- * cronómetro estaba en ella, se para. La tarea se borra en el último lote, al final.
+ * Borra una tarea (D-13): sus comentarios, su actividad y sus registros de horas; quita sus
+ * vínculos de las otras tareas; sus subtareas quedan sueltas; y si el cronómetro estaba en ella,
+ * se para. La tarea se borra en el último lote, al final.
+ * Desde la v1.1.0 (D-11), antes se guarda en la papelera con sus comentarios y horas, para poder
+ * restaurarla durante 30 días (la actividad no se conserva). Con `trash: false`, es definitivo.
  */
-export async function deleteTask(db: Firestore, uid: string, task: Task): Promise<DeleteSummary> {
+export async function deleteTask(
+  db: Firestore,
+  uid: string,
+  task: Task,
+  options: { trash?: boolean } = {},
+): Promise<DeleteSummary> {
   const tasks = tasksCollection(db, uid)
   const taskRef = doc(tasks, task.id)
   const profileRef = doc(db, 'users', uid)
 
-  const [comments, activity, worklogs, subtasks, profile] = await Promise.all([
+  const [raw, comments, activity, worklogs, subtasks, profile] = await Promise.all([
+    getDoc(taskRef),
     getDocs(collection(taskRef, 'comments')),
     getDocs(collection(taskRef, 'activity')),
     getDocs(query(collection(db, 'users', uid, 'worklogs'), where('taskId', '==', task.id))),
@@ -264,6 +279,25 @@ export async function deleteTask(db: Firestore, uid: string, task: Task): Promis
   const linked = await Promise.all(linkedIds.map((id) => getDoc(doc(tasks, id))))
 
   const ops: Op[] = []
+
+  // Papelera: la tarea tal cual, con sus comentarios y horas (cada uno con su id).
+  let trashed = false
+  if (options.trash !== false && raw.exists()) {
+    const entry = {
+      task: raw.data(),
+      comments: comments.docs.map((d) => ({ id: d.id, ...d.data() })),
+      worklogs: worklogs.docs.map((d) => ({ id: d.id, ...d.data() })),
+    }
+    if (JSON.stringify(entry).length < MAX_TRASH_CHARS) {
+      ops.push({
+        kind: 'set',
+        ref: doc(db, 'users', uid, 'trash', task.id),
+        data: { ...entry, deletedAt: serverTimestamp() },
+      })
+      trashed = true
+    }
+  }
+
   for (const d of [...comments.docs, ...activity.docs, ...worklogs.docs])
     ops.push({ kind: 'delete', ref: d.ref })
   for (const d of subtasks.docs)
@@ -298,6 +332,7 @@ export async function deleteTask(db: Firestore, uid: string, task: Task): Promis
     subtasksDetached: subtasks.size,
     linksCleaned,
     timerCleared,
+    trashed,
   }
 }
 

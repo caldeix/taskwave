@@ -19,6 +19,7 @@ import {
   updateTaskFields,
   updateTaskStatus,
 } from '@/data/taskWrites'
+import { restoreFromTrash } from '@/data/trash'
 import { taskFromData } from '@/domain/task'
 import type { NewTaskInput } from '@/domain/taskCreate'
 import {
@@ -283,6 +284,7 @@ describe('deleteTask en cascada (D-13)', () => {
       subtasksDetached: 1,
       linksCleaned: 2,
       timerCleared: true,
+      trashed: true,
     })
 
     const after = await readAsAdmin(async (a) => {
@@ -319,6 +321,59 @@ describe('deleteTask en cascada (D-13)', () => {
       parentS: null,
       timer: null,
     })
+  })
+
+  it('la papelera guarda la tarea con sus comentarios y horas, y se restaura (v1.1.0)', async () => {
+    const db = as(env, U.active)
+    const snap = await getDoc(doc(db, 'users', U.active, 'tasks', 'T'))
+    await deleteTask(db, U.active, taskFromData('T', snap.data()!))
+
+    const trash = await readAsAdmin(async (a) =>
+      (await getDoc(doc(a, 'users', U.active, 'trash', 'T'))).data(),
+    )
+    expect(trash?.task.key).toBe('EST-1')
+    expect(trash?.comments).toHaveLength(2)
+    expect(trash?.worklogs).toHaveLength(2)
+
+    const key = await restoreFromTrash(db, U.active, 'T')
+    expect(key).toBe('EST-1')
+    const after = await readAsAdmin(async (a) => {
+      const u = (...p: string[]) => doc(a, 'users', U.active, ...p)
+      return {
+        task: (await getDoc(u('tasks', 'T'))).data(),
+        comments: (await getDocs(collection(a, 'users', U.active, 'tasks', 'T', 'comments'))).size,
+        worklogs: (
+          await getDocs(
+            query(collection(a, 'users', U.active, 'worklogs'), where('taskId', '==', 'T')),
+          )
+        ).size,
+        linksA: (await getDoc(u('tasks', 'A'))).data()?.links,
+        inTrash: (await getDoc(u('trash', 'T'))).exists(),
+      }
+    })
+    expect(after.task?.key).toBe('EST-1')
+    // El vínculo con la tarea que ya no existía no vuelve.
+    expect(after.task?.links).toEqual([
+      { type: 'blocks', taskId: 'A' },
+      { type: 'relates', taskId: 'B' },
+    ])
+    expect(after.comments).toBe(2)
+    expect(after.worklogs).toBe(2)
+    expect(after.linksA).toEqual([{ type: 'blocked_by', taskId: 'T' }])
+    expect(after.inTrash).toBe(false)
+  })
+
+  it('con trash: false se borra sin papelera', async () => {
+    const db = as(env, U.active)
+    const snap = await getDoc(doc(db, 'users', U.active, 'tasks', 'T'))
+    const summary = await deleteTask(db, U.active, taskFromData('T', snap.data()!), {
+      trash: false,
+    })
+    expect(summary.trashed).toBe(false)
+    const inTrash = await readAsAdmin(async (a) =>
+      (await getDoc(doc(a, 'users', U.active, 'trash', 'T'))).exists(),
+    )
+    expect(inTrash).toBe(false)
   })
 
   it('otro usuario no puede borrar mis tareas', async () => {

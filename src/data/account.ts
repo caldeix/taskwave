@@ -37,8 +37,10 @@ async function deleteAll(db: Firestore, refs: DocumentReference[]): Promise<void
 /** Borra todos los datos del usuario y su perfil. Devuelve cuántos documentos había. */
 export async function deleteAccountData(db: Firestore, uid: string): Promise<DeletedCounts> {
   const user = doc(db, 'users', uid)
-  const [tasks, worklogs, projects, tags] = await Promise.all(
-    ['tasks', 'worklogs', 'projects', 'tags'].map((name) => getDocs(collection(user, name))),
+  const [tasks, worklogs, projects, tags, templates, trash] = await Promise.all(
+    ['tasks', 'worklogs', 'projects', 'tags', 'templates', 'trash'].map((name) =>
+      getDocs(collection(user, name)),
+    ),
   )
 
   const children: DocumentReference[] = []
@@ -68,6 +70,8 @@ export async function deleteAccountData(db: Firestore, uid: string): Promise<Del
     ...worklogs!.docs.map((d) => d.ref),
     ...projects!.docs.map((d) => d.ref),
     ...tags!.docs.map((d) => d.ref),
+    ...templates!.docs.map((d) => d.ref),
+    ...trash!.docs.map((d) => d.ref),
   ])
   await deleteAll(db, [user])
 
