@@ -668,6 +668,23 @@ const es = {
     confirmTitle: 'Borrar la plantilla',
     confirmMessage: 'Se borrará la plantilla «{name}». Las tareas creadas con ella no cambian.',
   },
+  trash: {
+    title: 'Papelera',
+    help: 'Las tareas borradas se guardan aquí {days} días con sus comentarios y horas. Al restaurarlas, los comentarios toman la fecha de hoy y la actividad no se recupera.',
+    loading: 'Cargando la papelera…',
+    none: 'La papelera está vacía.',
+    empty: 'Vaciar la papelera',
+    contents: '{comments} comentarios · {worklogs} registros de horas',
+    restore: 'Restaurar {key}',
+    restored: 'Tarea {key} restaurada.',
+    deleteForever: 'Borrar {key} definitivamente',
+    deleteForeverShort: 'Borrar definitivamente',
+    deleted: 'Borrada definitivamente. | {n} borradas definitivamente.',
+    failed: 'No se ha podido completar. Vuelve a intentarlo.',
+    confirmTitle: '¿Borrar definitivamente?',
+    confirmOne: '{key} se borrará para siempre y no se podrá restaurar.',
+    confirmAll: 'Se borrará para siempre {n} tarea. | Se borrarán para siempre {n} tareas.',
+  },
   kanban: {
     progress: {
       blocked: 'Bloqueada',
@@ -710,7 +727,7 @@ const es = {
     duplicateFailed: 'No se ha podido duplicar la tarea. Revisa la conexión.',
     newButton: 'Nueva tarea',
     created: 'Tarea {key} creada.',
-    deleted: 'Tarea {key} eliminada.',
+    deleted: 'Tarea {key} en la papelera.',
     deleteFailed: 'No se pudo eliminar la tarea. Vuelve a intentarlo.',
     fields: {
       title: 'Título',
@@ -731,10 +748,10 @@ const es = {
       failed: 'No se pudo crear la tarea. Comprueba la conexión y vuelve a intentarlo.',
     },
     confirmDelete: {
-      title: '¿Eliminar la tarea?',
+      title: '¿Mandar la tarea a la papelera?',
       message:
-        'Se eliminará {key} «{title}» con sus comentarios, su actividad y su registro de horas. Sus vínculos desaparecerán de las otras tareas y sus subtareas quedarán sueltas. No se puede deshacer.',
-      confirm: 'Eliminar',
+        '{key} «{title}» irá a la papelera con sus comentarios y su registro de horas, y se podrá restaurar durante 30 días desde Ajustes. Sus vínculos desaparecerán de las otras tareas y sus subtareas quedarán sueltas.',
+      confirm: 'Mandar a la papelera',
     },
     validation: {
       titleRequired: 'Escribe un título.',

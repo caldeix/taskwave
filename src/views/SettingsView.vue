@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { Settings, Trash2 } from 'lucide-vue-next'
 import DeleteAccountDialog from '@/components/settings/DeleteAccountDialog.vue'
 import TemplatesSettings from '@/components/settings/TemplatesSettings.vue'
+import TrashSettings from '@/components/settings/TrashSettings.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import FormMessage from '@/components/ui/FormMessage.vue'
@@ -162,6 +163,9 @@ const heading = 'm-0 font-text text-base font-bold text-gray-800 dark:text-white
 
       <!-- Plantillas (v1.1.0) -->
       <TemplatesSettings />
+
+      <!-- Papelera (v1.1.0) -->
+      <TrashSettings />
 
       <!-- Baja -->
       <section :class="[card, 'border-coral-500 dark:border-coral-700']">
