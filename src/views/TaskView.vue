@@ -14,6 +14,7 @@ import TaskDescription from '@/components/task/TaskDescription.vue'
 import TaskDetailsPanel from '@/components/task/TaskDetailsPanel.vue'
 import TaskRelations from '@/components/task/TaskRelations.vue'
 import TaskTabs from '@/components/task/TaskTabs.vue'
+import SaveTemplateDialog from '@/components/task/SaveTemplateDialog.vue'
 import TaskTitle from '@/components/task/TaskTitle.vue'
 import ProjectIcon from '@/components/projects/ProjectIcon.vue'
 import CommandPalette from '@/components/ui/CommandPalette.vue'
@@ -149,6 +150,7 @@ async function confirmDelete(): Promise<void> {
 const timer = useTimerStore()
 const relations = ref<InstanceType<typeof TaskRelations> | null>(null)
 const paletteOpen = ref(false)
+const savingTemplate = ref(false)
 
 async function guarded(action: () => Promise<unknown>): Promise<void> {
   try {
@@ -236,6 +238,15 @@ const commands = computed<Command[]>(() => {
       label: t('tasks.duplicate'),
       keywords: 'copiar',
       run: duplicate,
+    },
+    {
+      id: 'template',
+      group: group('task'),
+      label: t('templates.saveTitle'),
+      keywords: 'plantilla modelo',
+      run: () => {
+        savingTemplate.value = true
+      },
     },
     {
       id: 'delete',
@@ -394,6 +405,12 @@ const iconButton =
       />
     </div>
 
+    <SaveTemplateDialog
+      :open="savingTemplate"
+      :task="task"
+      :subtasks="related.subtasks.value"
+      @close="savingTemplate = false"
+    />
     <CommandPalette
       :open="paletteOpen"
       :commands="commands"

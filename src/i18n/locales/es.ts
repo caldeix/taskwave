@@ -648,6 +648,26 @@ const es = {
     created: 'Se ha creado la siguiente: {key}.',
     badge: 'Se repite',
   },
+  templates: {
+    title: 'Plantillas',
+    help: 'Se guardan desde una tarea (paleta «.» → «Guardar como plantilla») y se usan en «Nueva tarea».',
+    loading: 'Cargando plantillas…',
+    empty: 'Aún no hay plantillas.',
+    use: 'Plantilla',
+    none: 'Sin plantilla',
+    saveTitle: 'Guardar como plantilla',
+    saveHelp:
+      'Guarda el título, la descripción, la prioridad, el estimado, los tags y {n} subtareas.',
+    name: 'Nombre de la plantilla',
+    save: 'Guardar plantilla',
+    saved: 'Plantilla «{name}» guardada.',
+    failed: 'No se ha podido guardar la plantilla.',
+    subtasksCount: 'sin subtareas | 1 subtarea | {n} subtareas',
+    delete: 'Borrar la plantilla «{name}»',
+    deleted: 'Plantilla «{name}» borrada.',
+    confirmTitle: 'Borrar la plantilla',
+    confirmMessage: 'Se borrará la plantilla «{name}». Las tareas creadas con ella no cambian.',
+  },
   kanban: {
     progress: {
       blocked: 'Bloqueada',

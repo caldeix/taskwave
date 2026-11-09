@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Settings, Trash2 } from 'lucide-vue-next'
 import DeleteAccountDialog from '@/components/settings/DeleteAccountDialog.vue'
+import TemplatesSettings from '@/components/settings/TemplatesSettings.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseInput from '@/components/ui/BaseInput.vue'
 import FormMessage from '@/components/ui/FormMessage.vue'
@@ -158,6 +159,9 @@ const heading = 'm-0 font-text text-base font-bold text-gray-800 dark:text-white
           <dd class="m-0 text-gray-800 dark:text-white">TaskWave {{ version }}</dd>
         </dl>
       </section>
+
+      <!-- Plantillas (v1.1.0) -->
+      <TemplatesSettings />
 
       <!-- Baja -->
       <section :class="[card, 'border-coral-500 dark:border-coral-700']">
