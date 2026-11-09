@@ -83,6 +83,100 @@ export function checkRelation(
   return null
 }
 
+// ------------------------------------------------- cambiar el tipo de una relación (v1.0.2)
+
+/** Lo que guarda cada tarea de una relación: sus vínculos y su padre. */
+export interface RelationSide {
+  links: TaskLink[]
+  parentId: string | null
+}
+
+/** Las dos tareas de una relación, vista desde `self`. */
+export interface RelationPair {
+  selfId: string
+  self: RelationSide
+  otherId: string
+  other: RelationSide
+}
+
+const sameLink = (a: TaskLink, b: TaskLink) => a.type === b.type && a.taskId === b.taskId
+
+/** Quita la relación `kind` (vista desde `self`) de las dos tareas. */
+export function removeRelation(pair: RelationPair, kind: RelationKind): RelationPair {
+  const { selfId, otherId } = pair
+  if (isLinkType(kind)) {
+    const mine: TaskLink = { type: kind, taskId: otherId }
+    const theirs = inverseLink(mine, selfId)
+    return {
+      ...pair,
+      self: { ...pair.self, links: pair.self.links.filter((l) => !sameLink(l, mine)) },
+      other: { ...pair.other, links: pair.other.links.filter((l) => !sameLink(l, theirs)) },
+    }
+  }
+  if (kind === 'parent' && pair.self.parentId === otherId)
+    return { ...pair, self: { ...pair.self, parentId: null } }
+  if (kind === 'child' && pair.other.parentId === selfId)
+    return { ...pair, other: { ...pair.other, parentId: null } }
+  return pair
+}
+
+/** Añade la relación `kind` (vista desde `self`) a las dos tareas, sin repetir vínculos. */
+export function addRelation(pair: RelationPair, kind: RelationKind): RelationPair {
+  const { selfId, otherId } = pair
+  if (isLinkType(kind)) {
+    const mine: TaskLink = { type: kind, taskId: otherId }
+    const theirs = inverseLink(mine, selfId)
+    const add = (links: TaskLink[], link: TaskLink) =>
+      links.some((l) => sameLink(l, link)) ? links : [...links, link]
+    return {
+      ...pair,
+      self: { ...pair.self, links: add(pair.self.links, mine) },
+      other: { ...pair.other, links: add(pair.other.links, theirs) },
+    }
+  }
+  if (kind === 'parent') return { ...pair, self: { ...pair.self, parentId: otherId } }
+  return { ...pair, other: { ...pair.other, parentId: selfId } }
+}
+
+/**
+ * Pasar de «es subtarea de» a «tiene como subtarea a» (o al revés) intercambia la padre y la
+ * hija. Las reglas comprueban la padre con su estado anterior, así que se guarda en dos pasos:
+ * primero se quita la relación y después se pone la nueva.
+ */
+export function swapsParent(from: RelationKind, to: RelationKind): boolean {
+  return (from === 'parent' && to === 'child') || (from === 'child' && to === 'parent')
+}
+
+/**
+ * Comprueba si la relación de `task` con `target` puede pasar de `from` a `to`, como si la
+ * anterior ya no estuviera. `taskSubtasks` y `targetSubtasks` son cuántas subtareas tiene cada
+ * una (basta con saber si son 0, 1 o más).
+ */
+export function checkRelationChange(
+  task: Task,
+  target: Task,
+  from: RelationKind,
+  to: RelationKind,
+  taskSubtasks: number,
+  targetSubtasks: number,
+): RelationError | null {
+  if (from === to) return null
+  const after = removeRelation(
+    {
+      selfId: task.id,
+      self: { links: task.links, parentId: task.parentId },
+      otherId: target.id,
+      other: { links: target.links, parentId: target.parentId },
+    },
+    from,
+  )
+  const selfAfter = { ...task, ...after.self }
+  const targetAfter = { ...target, ...after.other }
+  const taskLeft = from === 'child' ? taskSubtasks - 1 : taskSubtasks
+  const targetLeft = from === 'parent' ? targetSubtasks - 1 : targetSubtasks
+  return checkRelation(selfAfter, targetAfter, to, taskLeft > 0, targetLeft > 0)
+}
+
 /** Vínculos agrupados por tipo, en el orden de `LINK_TYPES`, para la vista de tarea. */
 export function groupLinks(links: TaskLink[]): { type: LinkType; taskIds: string[] }[] {
   return LINK_TYPES.map((type) => ({

@@ -2,6 +2,7 @@ import {
   Timestamp,
   collection,
   documentId,
+  getDocs,
   limit,
   orderBy,
   query,
@@ -106,6 +107,14 @@ export function startedQuery(db: Firestore, uid: string, scope: TaskScope, max =
 /** Subtareas de una tarea (step-16). Una igualdad simple: no necesita índice compuesto. */
 export function subtasksQuery(db: Firestore, uid: string, parentId: string): Query {
   return query(tasksCollection(db, uid), where('parentId', '==', parentId))
+}
+
+/**
+ * Cuántas subtareas tiene una tarea, hasta 2: para las comprobaciones de un solo nivel basta con
+ * saber si son 0, 1 o más (v1.0.2).
+ */
+export async function countSubtasks(db: Firestore, uid: string, parentId: string): Promise<number> {
+  return (await getDocs(query(subtasksQuery(db, uid, parentId), limit(2)))).size
 }
 
 /**

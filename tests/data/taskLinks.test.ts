@@ -10,8 +10,9 @@ import {
   writeBatch,
   type Firestore,
 } from 'firebase/firestore'
-import { subtasksQuery, tasksByIdsQueries } from '@/data/taskQueries'
+import { countSubtasks, subtasksQuery, tasksByIdsQueries } from '@/data/taskQueries'
 import {
+  changeRelation,
   createTask,
   linkTasks,
   setTaskParent,
@@ -147,6 +148,52 @@ describe('subtareas de un nivel (D-41)', () => {
     expect(key).toBe('EST-11')
     expect((await readTask(id))?.parentId).toBe('P')
     await expect(createTask(db, U.active, { ...input, parentId: 'S' })).rejects.toThrow()
+  })
+})
+
+describe('changeRelation (v1.0.2)', () => {
+  it('de «relacionada con» a «bloquea a» en las dos tareas', async () => {
+    const db = as(env, U.active)
+    await linkTasks(db, U.active, 'A', { type: 'relates', taskId: 'B' })
+    await changeRelation(db, U.active, 'A', 'B', 'relates', 'blocks')
+    expect((await readTask('A'))?.links).toEqual([{ type: 'blocks', taskId: 'B' }])
+    expect((await readTask('B'))?.links).toEqual([{ type: 'blocked_by', taskId: 'A' }])
+  })
+
+  it('de vínculo a subtarea y de vuelta a vínculo', async () => {
+    const db = as(env, U.active)
+    await linkTasks(db, U.active, 'A', { type: 'relates', taskId: 'B' })
+    await changeRelation(db, U.active, 'A', 'B', 'relates', 'child')
+    expect(await readTask('A')).toMatchObject({ links: [], parentId: null })
+    expect(await readTask('B')).toMatchObject({ links: [], parentId: 'A' })
+    await changeRelation(db, U.active, 'B', 'A', 'parent', 'causes')
+    expect(await readTask('B')).toMatchObject({
+      links: [{ type: 'causes', taskId: 'A' }],
+      parentId: null,
+    })
+    expect((await readTask('A'))?.links).toEqual([{ type: 'caused_by', taskId: 'B' }])
+  })
+
+  it('intercambia la padre y la hija', async () => {
+    const db = as(env, U.active)
+    await changeRelation(db, U.active, 'P', 'S', 'child', 'parent')
+    expect((await readTask('P'))?.parentId).toBe('S')
+    expect((await readTask('S'))?.parentId).toBeNull()
+  })
+
+  it('las reglas siguen mandando: no se puede colgar de una subtarea', async () => {
+    const db = as(env, U.active)
+    await linkTasks(db, U.active, 'A', { type: 'relates', taskId: 'S' })
+    await expect(changeRelation(db, U.active, 'A', 'S', 'relates', 'parent')).rejects.toThrow()
+    // La transacción no deja nada a medias.
+    expect((await readTask('A'))?.links).toEqual([{ type: 'relates', taskId: 'S' }])
+    expect((await readTask('S'))?.links).toEqual([{ type: 'relates', taskId: 'A' }])
+  })
+
+  it('countSubtasks cuenta hasta 2', async () => {
+    const db = as(env, U.active)
+    expect(await countSubtasks(db, U.active, 'P')).toBe(1)
+    expect(await countSubtasks(db, U.active, 'A')).toBe(0)
   })
 })
 

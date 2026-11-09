@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import {
   createTask,
   deleteTask,
+  changeRelation,
   linkTasks,
   moveTaskToProject,
   setTaskParent,
@@ -17,6 +18,7 @@ import { addWorklog, deleteWorklog, updateWorklog } from '@/data/worklogs'
 import { todayKey } from '@/domain/dates'
 import { statusChangePatch } from '@/domain/kanban'
 import { isClosedStatus, type TaskStatus } from '@/domain/status'
+import type { RelationKind } from '@/domain/links'
 import type { Task, TaskLink } from '@/domain/task'
 import { duplicateInput, type NewTaskInput } from '@/domain/taskCreate'
 import type { Entry } from '@/domain/worklog'
@@ -93,6 +95,16 @@ export const useTasksStore = defineStore('tasks', () => {
     return unlinkTasks(db, requireUid(), task.id, link)
   }
 
+  /** Cambia el tipo de la relación de `task` con `otherId` (v1.0.2). */
+  function changeRelationKind(
+    task: Task,
+    otherId: string,
+    from: RelationKind,
+    to: RelationKind,
+  ): Promise<void> {
+    return changeRelation(db, requireUid(), task.id, otherId, from, to)
+  }
+
   /** Hace de `taskId` una subtarea de `parentId`, o la suelta con `null`. */
   function setParent(taskId: string, parentId: string | null): Promise<void> {
     return setTaskParent(db, requireUid(), taskId, parentId)
@@ -135,6 +147,7 @@ export const useTasksStore = defineStore('tasks', () => {
     link,
     unlink,
     setParent,
+    changeRelationKind,
     comment,
     editCommentBody,
     removeComment,

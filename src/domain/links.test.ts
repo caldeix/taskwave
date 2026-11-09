@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
   MAX_LINKS,
+  addRelation,
   checkRelation,
+  checkRelationChange,
   groupLinks,
   inverseLink,
   parseTaskKey,
   relatedIds,
+  removeRelation,
   searchTasks,
   subtaskTotals,
+  swapsParent,
+  type RelationPair,
 } from './links'
 import { taskFromData, type Task, type TaskLink } from './task'
 
@@ -160,5 +165,102 @@ describe('searchTasks', () => {
     expect(searchTasks(tasks, 'leccion', new Set(['2'])).map((t) => t.key)).toEqual(['EST-12'])
     expect(searchTasks(tasks, 'e', new Set(), 2)).toHaveLength(2)
     expect(searchTasks(tasks, '   ', new Set())).toEqual([])
+  })
+})
+
+describe('cambiar el tipo de una relación (v1.0.2)', () => {
+  const pair = (self: Partial<RelationPair['self']>, other: Partial<RelationPair['other']>) => ({
+    selfId: 'A',
+    self: { links: [], parentId: null, ...self },
+    otherId: 'B',
+    other: { links: [], parentId: null, ...other },
+  })
+
+  it('de «relacionada con» a «bloquea a» cambia el vínculo en las dos tareas', () => {
+    const start = pair(
+      {
+        links: [
+          { type: 'relates', taskId: 'B' },
+          { type: 'causes', taskId: 'C' },
+        ],
+      },
+      { links: [{ type: 'relates', taskId: 'A' }] },
+    )
+    const end = addRelation(removeRelation(start, 'relates'), 'blocks')
+    expect(end.self.links).toEqual([
+      { type: 'causes', taskId: 'C' },
+      { type: 'blocks', taskId: 'B' },
+    ])
+    expect(end.other.links).toEqual([{ type: 'blocked_by', taskId: 'A' }])
+  })
+
+  it('de vínculo a subtarea: quita el vínculo y pone la padre', () => {
+    const start = pair(
+      { links: [{ type: 'relates', taskId: 'B' }] },
+      { links: [{ type: 'relates', taskId: 'A' }] },
+    )
+    const asParent = addRelation(removeRelation(start, 'relates'), 'parent')
+    expect(asParent.self).toEqual({ links: [], parentId: 'B' })
+    expect(asParent.other).toEqual({ links: [], parentId: null })
+    const asChild = addRelation(removeRelation(start, 'relates'), 'child')
+    expect(asChild.other.parentId).toBe('A')
+  })
+
+  it('de subtarea a vínculo: suelta la hija y vincula', () => {
+    const start = pair({}, { parentId: 'A' })
+    const end = addRelation(removeRelation(start, 'child'), 'relates')
+    expect(end.other).toEqual({ links: [{ type: 'relates', taskId: 'A' }], parentId: null })
+    expect(end.self.links).toEqual([{ type: 'relates', taskId: 'B' }])
+  })
+
+  it('no quita una padre que no es la de la relación', () => {
+    const start = pair({ parentId: 'Z' }, {})
+    expect(removeRelation(start, 'parent')).toEqual(start)
+  })
+
+  it('intercambiar padre e hija va en dos pasos', () => {
+    expect(swapsParent('parent', 'child')).toBe(true)
+    expect(swapsParent('child', 'parent')).toBe(true)
+    expect(swapsParent('relates', 'child')).toBe(false)
+  })
+
+  it('comprueba el cambio como si la relación anterior ya no estuviera', () => {
+    const a = task('A', { links: [{ type: 'relates', taskId: 'B' }] })
+    const b = task('B', { links: [{ type: 'relates', taskId: 'A' }] })
+    expect(checkRelationChange(a, b, 'relates', 'blocks', 0, 0)).toBeNull()
+    expect(checkRelationChange(a, b, 'relates', 'relates', 0, 0)).toBeNull()
+    // B tiene subtareas: no puede pasar a ser subtarea de A.
+    expect(checkRelationChange(a, b, 'relates', 'child', 0, 1)).toBe('targetHasSubtasks')
+    // A tiene subtareas: no puede pasar a ser subtarea de B.
+    expect(checkRelationChange(a, b, 'relates', 'parent', 2, 0)).toBe('hasSubtasks')
+  })
+
+  it('al intercambiar padre e hija descuenta la propia relación', () => {
+    // B es la única subtarea de A: puede pasar a ser su padre.
+    const a = task('A')
+    const b = task('B', { parentId: 'A' })
+    expect(checkRelationChange(a, b, 'child', 'parent', 1, 0)).toBeNull()
+    // Si A tiene más subtareas, no.
+    expect(checkRelationChange(a, b, 'child', 'parent', 2, 0)).toBe('hasSubtasks')
+    // A es la única subtarea de B: B puede pasar a ser su hija.
+    const c = task('C', { parentId: 'D' })
+    const d = task('D')
+    expect(checkRelationChange(c, d, 'parent', 'child', 0, 1)).toBeNull()
+  })
+
+  it('no deja cambiar a un vínculo que ya existe con otro tipo', () => {
+    const a = task('A', {
+      links: [
+        { type: 'relates', taskId: 'B' },
+        { type: 'blocks', taskId: 'B' },
+      ],
+    })
+    const b = task('B', {
+      links: [
+        { type: 'relates', taskId: 'A' },
+        { type: 'blocked_by', taskId: 'A' },
+      ],
+    })
+    expect(checkRelationChange(a, b, 'relates', 'blocks', 0, 0)).toBe('duplicate')
   })
 })

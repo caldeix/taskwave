@@ -17,7 +17,14 @@ import {
 import { buildNewTask, removeLinksTo, taskKey, type NewTaskInput } from '@/domain/taskCreate'
 import type { StatusPatch } from '@/domain/kanban'
 import { activityChanges, type ActivityChange } from '@/domain/activity'
-import { inverseLink } from '@/domain/links'
+import {
+  addRelation,
+  inverseLink,
+  removeRelation,
+  swapsParent,
+  type RelationKind,
+  type RelationPair,
+} from '@/domain/links'
 import type { Task, TaskLink } from '@/domain/task'
 import { tasksCollection } from './taskQueries'
 
@@ -354,5 +361,69 @@ export async function setTaskParent(
   await updateDoc(doc(tasksCollection(db, uid), taskId), {
     parentId,
     updatedAt: serverTimestamp(),
+  })
+}
+
+/**
+ * Cambia el tipo de la relación de `taskId` con `otherId` (v1.0.2): de un vínculo a otro, de un
+ * vínculo a subtarea o al revés. Lee las dos tareas y escribe las dos en una transacción, así que
+ * o cambia del todo o no cambia. Intercambiar la padre y la hija va en dos transacciones
+ * (`swapsParent`), porque las reglas comprueban la padre con su estado anterior.
+ */
+export async function changeRelation(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  otherId: string,
+  from: RelationKind,
+  to: RelationKind,
+): Promise<void> {
+  if (from === to) return
+  if (swapsParent(from, to)) {
+    await applyRelation(db, uid, taskId, otherId, (pair) => removeRelation(pair, from))
+    await applyRelation(db, uid, taskId, otherId, (pair) => addRelation(pair, to))
+    return
+  }
+  await applyRelation(db, uid, taskId, otherId, (pair) =>
+    addRelation(removeRelation(pair, from), to),
+  )
+}
+
+async function applyRelation(
+  db: Firestore,
+  uid: string,
+  taskId: string,
+  otherId: string,
+  change: (pair: RelationPair) => RelationPair,
+): Promise<void> {
+  const tasks = tasksCollection(db, uid)
+  const selfRef = doc(tasks, taskId)
+  const otherRef = doc(tasks, otherId)
+  await runTransaction(db, async (tx) => {
+    const [selfSnap, otherSnap] = await Promise.all([tx.get(selfRef), tx.get(otherRef)])
+    if (!selfSnap.exists() || !otherSnap.exists()) throw new Error('task-not-found')
+    const side = (data: Record<string, unknown>) => ({
+      links: (data.links as TaskLink[] | undefined) ?? [],
+      parentId: (data.parentId as string | null | undefined) ?? null,
+    })
+    const before: RelationPair = {
+      selfId: taskId,
+      self: side(selfSnap.data()),
+      otherId,
+      other: side(otherSnap.data()),
+    }
+    const after = change(before)
+    const write = (
+      ref: DocumentReference,
+      was: RelationPair['self'],
+      now: RelationPair['self'],
+    ) => {
+      const patch: Record<string, unknown> = {}
+      if (JSON.stringify(was.links) !== JSON.stringify(now.links)) patch.links = now.links
+      if (was.parentId !== now.parentId) patch.parentId = now.parentId
+      if (Object.keys(patch).length) tx.update(ref, { ...patch, updatedAt: serverTimestamp() })
+    }
+    write(selfRef, before.self, after.self)
+    write(otherRef, before.other, after.other)
   })
 }
