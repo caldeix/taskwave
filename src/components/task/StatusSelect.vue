@@ -4,8 +4,11 @@ import { useI18n } from 'vue-i18n'
 import { Check, ChevronDown } from 'lucide-vue-next'
 import { STATUS_STYLES, TASK_STATUSES, type TaskStatus } from '@/domain/status'
 
-/** Badge de estado pulsable que abre la lista de estados (vista de tarea, step-14). */
-const props = defineProps<{ status: TaskStatus; disabled?: boolean }>()
+/**
+ * Badge de estado pulsable que abre la lista de estados (vista de tarea, step-14). `compact` es la
+ * versión pequeña, alineada a la derecha, de las tareas relacionadas (v1.0.2).
+ */
+const props = defineProps<{ status: TaskStatus; disabled?: boolean; compact?: boolean }>()
 const emit = defineEmits<{ change: [status: TaskStatus] }>()
 
 const { t } = useI18n()
@@ -53,19 +56,23 @@ function onKeydown(event: KeyboardEvent): void {
       :aria-controls="listId"
       :aria-label="t('taskView.changeStatus', { status: t(`status.${status}`) })"
       :class="[
-        'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border-0 px-3 font-text text-sm font-bold transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait',
+        'inline-flex cursor-pointer items-center rounded-full border-0 font-text font-bold whitespace-nowrap transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-wait',
+        compact ? 'h-6 gap-1 pr-1.5 pl-2.5 text-xs' : 'h-8 gap-1.5 px-3 text-sm',
         STATUS_STYLES[status].badge,
       ]"
       @click="open = !open"
     >
       {{ t(`status.${status}`) }}
-      <ChevronDown class="h-4 w-4" aria-hidden="true" />
+      <ChevronDown :class="compact ? 'h-3.5 w-3.5' : 'h-4 w-4'" aria-hidden="true" />
     </button>
     <div
       v-if="open"
       :id="listId"
       role="listbox"
-      class="absolute left-0 z-30 mt-1 flex min-w-44 flex-col rounded-lg border border-gray-500 bg-white p-1 shadow-lg dark:border-gray-400 dark:bg-gray-900"
+      :class="[
+        'absolute z-30 mt-1 flex min-w-44 flex-col rounded-lg border border-gray-500 bg-white p-1 shadow-lg dark:border-gray-400 dark:bg-gray-900',
+        compact ? 'right-0' : 'left-0',
+      ]"
     >
       <button
         v-for="option in TASK_STATUSES"
