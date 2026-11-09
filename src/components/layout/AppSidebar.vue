@@ -22,6 +22,7 @@ import {
   Plus,
   Trash2,
   Users,
+  Sun,
   X,
 } from 'lucide-vue-next'
 import SidebarLink from './SidebarLink.vue'
@@ -230,6 +231,9 @@ const iconButton =
 
     <!-- Vistas generales -->
     <div class="flex flex-col gap-1">
+      <SidebarLink :to="{ name: 'today' }" :label="t('nav.today')" :collapsed="props.collapsed">
+        <template #icon><Sun class="h-5 w-5" /></template>
+      </SidebarLink>
       <SidebarLink
         :to="{ name: 'home', query: viewQuery }"
         :label="t('nav.all')"

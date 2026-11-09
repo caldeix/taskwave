@@ -60,6 +60,11 @@ export function taskByKeyQuery(db: Firestore, uid: string, key: string): Query {
   return query(tasksCollection(db, uid), where('key', '==', key), limit(1))
 }
 
+/** Las últimas tareas tocadas (panel «Para hoy», v1.1.0): por fecha de actualización. */
+export function recentQuery(db: Firestore, uid: string, max = 8): Query {
+  return query(tasksCollection(db, uid), orderBy('updatedAt', 'desc'), limit(max))
+}
+
 /** Tareas por clave, en consultas de 30 como máximo (claves enlazadas en el markdown, v1.1.0). */
 export function tasksByKeysQueries(db: Firestore, uid: string, keys: string[]): Query[] {
   const unique = [...new Set(keys)].sort()

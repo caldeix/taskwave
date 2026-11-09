@@ -34,6 +34,11 @@ export const router = createRouter({
           props: { scope: 'all' },
         },
         {
+          path: 'hoy',
+          name: 'today',
+          component: () => import('@/views/TodayView.vue'),
+        },
+        {
           path: 'sin-proyecto',
           name: 'inbox',
           component: () => import('@/views/MainView.vue'),

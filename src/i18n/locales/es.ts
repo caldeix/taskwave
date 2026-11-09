@@ -427,6 +427,7 @@ const es = {
     offlineReady: 'TaskWave ya se puede abrir sin conexión.',
   },
   nav: {
+    today: 'Para hoy',
     settings: 'Ajustes',
     stats: 'Estadísticas',
     menu: 'Menú',
@@ -549,6 +550,22 @@ const es = {
     overdue: 'Atrasadas',
     undated: 'Sin fecha',
     clear: 'Quitar filtros ({n})',
+  },
+  today: {
+    title: 'Para hoy',
+    loading: 'Cargando tus tareas…',
+    sections: {
+      overdue: 'Atrasadas',
+      today: 'Hoy',
+      inProgress: 'En curso',
+      recent: 'Últimas tocadas',
+    },
+    empty: {
+      overdue: 'Nada atrasado.',
+      today: 'No hay tareas para hoy.',
+      inProgress: 'Ninguna otra tarea en curso.',
+      recent: 'Aún no has tocado ninguna tarea.',
+    },
   },
   kanban: {
     progress: {
