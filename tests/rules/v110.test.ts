@@ -92,7 +92,7 @@ function validTemplate() {
 }
 
 describe('plantillas (D-10)', () => {
-  const ref = (uid = U.active) => doc(as(env, uid), 'users', U.active, 'templates', 'tpl1')
+  const ref = (uid: string = U.active) => doc(as(env, uid), 'users', U.active, 'templates', 'tpl1')
 
   it('el dueño crea, edita y borra sus plantillas', async () => {
     await assertSucceeds(setDoc(ref(), validTemplate()))
@@ -124,7 +124,7 @@ function validTrash() {
 }
 
 describe('papelera (D-11)', () => {
-  const ref = (uid = U.active) => doc(as(env, uid), 'users', U.active, 'trash', 't1')
+  const ref = (uid: string = U.active) => doc(as(env, uid), 'users', U.active, 'trash', 't1')
 
   it('el dueño manda una tarea a la papelera, pero no la edita después', async () => {
     await assertSucceeds(setDoc(ref(), validTrash()))
