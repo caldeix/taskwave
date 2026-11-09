@@ -1,7 +1,7 @@
 import { isDayKey, type DayKey } from './dates'
 import { INBOX_KEY } from './projects'
 import type { TaskStatus } from './status'
-import type { Priority, Task, TaskLink } from './task'
+import type { Priority, Recurrence, Task, TaskLink } from './task'
 
 /**
  * Alta y borrado de tareas (step-10, D-12, D-13, D-15, D-19, D-51). Lógica pura: la escritura
@@ -27,6 +27,8 @@ export interface NewTaskInput {
   tagIds?: string[]
   weblinks?: { url: string; title: string }[]
   copyOf?: string
+  /** Recurrencia (v1.1.0, D-9): la siguiente de la serie la hereda. */
+  recurrence?: Recurrence | null
 }
 
 export type NewTaskErrors = Partial<Record<'title' | 'startDate' | 'endDate', string>>
@@ -77,6 +79,7 @@ export function buildNewTask(input: NewTaskInput, key: string, serverNow: unknow
     resolvedAt: null,
     createdAt: serverNow,
     updatedAt: serverNow,
+    ...(input.recurrence ? { recurrence: input.recurrence } : {}),
   }
 }
 
