@@ -1,12 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowRight, CalendarClock, Copy, Trash2 } from 'lucide-vue-next'
+import {
+  ArrowRight,
+  Ban,
+  CalendarClock,
+  Clock,
+  Copy,
+  ListChecks,
+  SquareCheck,
+  Trash2,
+} from 'lucide-vue-next'
 import PriorityIcon from '@/components/tasks/PriorityIcon.vue'
 import TagChip from '@/components/tags/TagChip.vue'
 import DropdownMenu, { type MenuItem } from '@/components/ui/DropdownMenu.vue'
 import { fromDayKey, type DayKey } from '@/domain/dates'
+import { formatHours } from '@/domain/duration'
 import { isOverdue } from '@/domain/kanban'
+import type { CardProgress } from '@/domain/progress'
 import { PROJECT_COLOR_CLASSES, type Project } from '@/domain/projects'
 import { TASK_STATUSES, isClosedStatus, type TaskStatus } from '@/domain/status'
 import type { Task } from '@/domain/task'
@@ -17,8 +28,14 @@ import { useTagsStore } from '@/stores/tags'
 /**
  * Tarjeta del kanban (step-12): clave, título, prioridad, proyecto (en «Todos»), fechas y tags
  * (step-17), con las atrasadas en coral (D-35). Se arrastra a otra columna o se mueve desde su menú.
+ * Con `progress` (v1.1.0) muestra subtareas, casillas, horas y si la bloquea otra tarea abierta.
  */
-const props = defineProps<{ task: Task; today: DayKey; project?: Project }>()
+const props = defineProps<{
+  task: Task
+  today: DayKey
+  project?: Project
+  progress?: CardProgress
+}>()
 const emit = defineEmits<{ open: []; move: [status: TaskStatus]; duplicate: []; delete: [] }>()
 
 const { t, locale } = useI18n()
@@ -42,6 +59,18 @@ const dates = computed(() => {
   return endDate && endDate !== startDate
     ? `${from} → ${shortDate.value.format(fromDayKey(endDate))}`
     : from
+})
+
+const hoursText = computed(() => {
+  const h = props.progress?.hours
+  if (!h) return ''
+  return h.estimateMin !== null
+    ? `${formatHours(h.spentMin)} / ${formatHours(h.estimateMin)}`
+    : formatHours(h.spentMin)
+})
+const overEstimate = computed(() => {
+  const h = props.progress?.hours
+  return !!h && h.estimateMin !== null && h.spentMin > h.estimateMin
 })
 
 const menu = computed<MenuItem[]>(() => [
@@ -121,6 +150,56 @@ function onMenu(key: string): void {
         <CalendarClock class="h-3.5 w-3.5" aria-hidden="true" />
         {{ dates }}
         <span v-if="overdue" class="sr-only">{{ t('kanban.overdue') }}</span>
+      </span>
+    </div>
+
+    <!-- Progreso (v1.1.0): subtareas, casillas, horas y bloqueos -->
+    <div
+      v-if="
+        progress &&
+        (progress.subtasks || progress.checklist || progress.hours || progress.blockedBy.length)
+      "
+      class="flex flex-wrap items-center gap-x-3 gap-y-1 font-text text-xs text-gray-500 dark:text-gray-400"
+    >
+      <span
+        v-if="progress.blockedBy.length"
+        class="inline-flex items-center gap-1 font-bold text-coral-700 dark:text-coral-500"
+        :title="t('kanban.progress.blockedBy', { keys: progress.blockedBy.join(', ') })"
+      >
+        <Ban class="h-3.5 w-3.5" aria-hidden="true" />
+        {{ t('kanban.progress.blocked') }}
+        <span class="sr-only">{{
+          t('kanban.progress.blockedBy', { keys: progress.blockedBy.join(', ') })
+        }}</span>
+      </span>
+      <span
+        v-if="progress.subtasks"
+        class="inline-flex items-center gap-1"
+        :title="t('kanban.progress.subtasks', { ...progress.subtasks })"
+      >
+        <ListChecks class="h-3.5 w-3.5" aria-hidden="true" />
+        {{ progress.subtasks.done }}/{{ progress.subtasks.total }}
+        <span class="sr-only">{{ t('kanban.progress.subtasks', { ...progress.subtasks }) }}</span>
+      </span>
+      <span
+        v-if="progress.checklist"
+        class="inline-flex items-center gap-1"
+        :title="t('kanban.progress.checklist', { ...progress.checklist })"
+      >
+        <SquareCheck class="h-3.5 w-3.5" aria-hidden="true" />
+        {{ progress.checklist.done }}/{{ progress.checklist.total }}
+        <span class="sr-only">{{ t('kanban.progress.checklist', { ...progress.checklist }) }}</span>
+      </span>
+      <span
+        v-if="progress.hours"
+        :class="[
+          'inline-flex items-center gap-1',
+          overEstimate ? 'font-bold text-coral-700 dark:text-coral-500' : '',
+        ]"
+        :title="t('kanban.progress.hours')"
+      >
+        <Clock class="h-3.5 w-3.5" aria-hidden="true" />
+        {{ hoursText }}
       </span>
     </div>
 

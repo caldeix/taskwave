@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import KanbanColumn from './KanbanColumn.vue'
 import type { DayKey } from '@/domain/dates'
 import { groupByStatus, type ClosedWindow } from '@/domain/kanban'
+import { cardProgress, progressIndex } from '@/domain/progress'
 import type { Project } from '@/domain/projects'
 import { TASK_STATUSES, isClosedStatus, type TaskStatus } from '@/domain/status'
 import type { Task } from '@/domain/task'
@@ -22,6 +23,8 @@ const props = defineProps<{
   sorter: (tasks: Task[]) => Task[]
   /** Estados ocultos con el ojo (step-13). */
   hiddenStatuses: TaskStatus[]
+  /** Todas las tareas leídas (sin filtrar), para el progreso de las tarjetas (v1.1.0). */
+  allTasks?: Task[]
 }>()
 const emit = defineEmits<{
   move: [task: Task, status: TaskStatus]
@@ -33,6 +36,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const columns = computed(() => groupByStatus(props.tasks, props.sorter))
+const index = computed(() => progressIndex(props.allTasks ?? props.tasks))
+const progressOf = (task: Task) => cardProgress(task, index.value)
 const visibleStatuses = computed(() =>
   TASK_STATUSES.filter((s) => !props.hiddenStatuses.includes(s)),
 )
@@ -48,6 +53,7 @@ const visibleStatuses = computed(() =>
         :tasks="columns[status]"
         :today="today"
         :project-of="projectOf"
+        :progress-of="progressOf"
         @drop="emit('move', $event, status)"
         @move="(task, next) => emit('move', task, next)"
         @open="emit('open', $event)"

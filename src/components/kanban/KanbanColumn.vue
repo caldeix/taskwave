@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import KanbanCard from './KanbanCard.vue'
 import type { DayKey } from '@/domain/dates'
+import type { CardProgress } from '@/domain/progress'
 import type { Project } from '@/domain/projects'
 import { STATUS_STYLES, type TaskStatus } from '@/domain/status'
 import type { Task } from '@/domain/task'
@@ -14,6 +15,7 @@ const props = defineProps<{
   tasks: Task[]
   today: DayKey
   projectOf: (task: Task) => Project | undefined
+  progressOf?: (task: Task) => CardProgress
 }>()
 const emit = defineEmits<{
   drop: [task: Task]
@@ -79,6 +81,7 @@ function onDrop(event: DragEvent): void {
           :task="task"
           :today="today"
           :project="projectOf(task)"
+          :progress="progressOf?.(task)"
           @open="emit('open', task)"
           @move="emit('move', task, $event)"
           @duplicate="emit('duplicate', task)"

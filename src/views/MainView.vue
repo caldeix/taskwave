@@ -374,6 +374,7 @@ async function confirmDelete(): Promise<void> {
         :closed-window="closedWindow"
         :sorter="kanbanSorter"
         :hidden-statuses="filtersStore.filters.hiddenStatuses"
+        :all-tasks="boardTasks"
         @move="setStatus"
         @open="openTask"
         @duplicate="duplicateTask"

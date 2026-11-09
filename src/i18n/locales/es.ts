@@ -549,6 +549,13 @@ const es = {
     clear: 'Quitar filtros ({n})',
   },
   kanban: {
+    progress: {
+      blocked: 'Bloqueada',
+      blockedBy: 'Bloqueada por {keys}',
+      subtasks: '{done} de {total} subtareas cerradas',
+      checklist: '{done} de {total} casillas marcadas',
+      hours: 'Horas registradas / estimado',
+    },
     empty: 'Sin tareas.',
     moveTo: 'Mover a {status}',
     cardActions: 'Acciones de {key}',
