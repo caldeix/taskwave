@@ -8,6 +8,7 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 
 - El tipo de cada relación de una tarea se cambia en su propia fila (bloquea a, está bloqueada por, causa, está causada por, está relacionada con, es subtarea de, tiene como subtarea a). El cambio se guarda en las dos tareas a la vez y la fila pasa a su nuevo grupo; de un vínculo a subtarea o al revés también. Si no se puede (por ejemplo, la tarea ya tiene subtareas), avisa y no cambia nada. En una columna estrecha, el selector se queda en un icono.
 - Al escribir en «Nueva subtarea» se propone crear la subtarea con ese título (Enter) o convertir en subtarea una tarea existente que coincida por clave o título, con las flechas o el ratón. Avisa si la tarea ya es subtarea de otra.
+- El estado de las tareas vinculadas, la padre y las subtareas se cambia desde su fila, con el mismo badge desplegable que la vista de tarea (y sus automatismos: al cerrar se guarda cuándo y se para el cronómetro si estaba en ella). En una columna estrecha, las horas de las subtareas se ocultan para que se lea el título.
 
 ### Cambiado
 

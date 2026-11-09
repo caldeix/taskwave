@@ -66,6 +66,7 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 
 - **Tipo de relación editable** — Cada tarea relacionada tiene su selector: de «relacionada con» a «bloquea a», o de vínculo a subtarea, guardado en las dos tareas
 - **Subtareas** — Al escribir propone crear la subtarea o convertir en subtarea una tarea existente
+- **Estado desde la fila** — El estado de las subtareas y de las tareas vinculadas se cambia sin entrar en ellas
 - **Vincular como en Jira** — Tipo y buscador en una fila, y «Sin vínculos» abre el buscador al pulsarlo
 
 ### v1.0.1 — Corrección
