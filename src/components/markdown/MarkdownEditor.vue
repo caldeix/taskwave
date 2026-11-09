@@ -4,12 +4,16 @@ import { useI18n } from 'vue-i18n'
 import { Bold, Code, Heading2, Italic, Link, List, ListChecks, TextQuote } from 'lucide-vue-next'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import MarkdownView from '@/components/markdown/MarkdownView.vue'
+import StatusBadge from '@/components/ui/StatusBadge.vue'
 import { useMarkdownShortcuts, type MarkdownAction } from '@/composables/useMarkdownShortcuts'
+import { useTaskSearch } from '@/composables/useTaskSearch'
+import type { Task } from '@/domain/task'
 
 /**
  * Editor de markdown (step-15, D-43): pestañas Escribir / Vista previa, barra de formato y
  * atajos (Ctrl+B, Ctrl+I, Ctrl+K). Ctrl+Enter guarda y Esc cancela. Sirve para la descripción
- * y, en el step-18, para los comentarios.
+ * y, en el step-18, para los comentarios. Al escribir una clave (`EST-`) propone las tareas que
+ * coinciden; Enter o Tab la completa (v1.1.0, D-3).
  */
 const props = withDefaults(
   defineProps<{
@@ -60,7 +64,67 @@ function save(): void {
   if (!tooLong.value && !props.saving) emit('save')
 }
 
+// ---- Autocompletado de claves de tarea (v1.1.0) ----
+const keyText = ref('')
+const keyStart = ref(0)
+const keyActive = ref(0)
+const { results: keyResults } = useTaskSearch(keyText, { enabled: () => !!keyText.value, max: 6 })
+const keyOpen = computed(
+  () => tab.value === 'write' && !!keyText.value && keyResults.value.length > 0,
+)
+const keyListId = `md-keys-${Math.random().toString(36).slice(2, 8)}`
+
+function onInput(event: Event): void {
+  emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
+  detectKey()
+}
+
+/** Busca una clave a medio escribir justo antes del cursor (`EST-`, `est-1`…). */
+function detectKey(): void {
+  const el = textarea.value
+  if (!el || el.selectionStart !== el.selectionEnd) {
+    keyText.value = ''
+    return
+  }
+  const before = el.value.slice(0, el.selectionStart)
+  const match = /(?:^|[\s([{>*_~])([A-Za-z][A-Za-z0-9]{1,5}-[0-9]{0,7})$/.exec(before)
+  keyText.value = match ? match[1]!.toUpperCase() : ''
+  keyStart.value = match ? el.selectionStart - match[1]!.length : 0
+  keyActive.value = 0
+}
+
+function insertKey(task: Task): void {
+  const el = textarea.value
+  if (!el) return
+  const end = el.selectionStart
+  const value = `${el.value.slice(0, keyStart.value)}${task.key} ${el.value.slice(end)}`
+  emit('update:modelValue', value)
+  keyText.value = ''
+  const caret = keyStart.value + task.key.length + 1
+  void nextTick(() => {
+    el.focus()
+    el.setSelectionRange(caret, caret)
+  })
+}
+
+/** Teclas del autocompletado; devuelve `true` si la tecla era suya. */
+function onKeyListKey(event: KeyboardEvent): boolean {
+  if (!keyOpen.value) return false
+  const count = keyResults.value.length
+  if (event.key === 'ArrowDown') keyActive.value = (keyActive.value + 1) % count
+  else if (event.key === 'ArrowUp') keyActive.value = (keyActive.value - 1 + count) % count
+  else if (event.key === 'Enter' || event.key === 'Tab') {
+    if (event.ctrlKey || event.metaKey) return false
+    const task = keyResults.value[keyActive.value]
+    if (task) insertKey(task)
+  } else if (event.key === 'Escape') keyText.value = ''
+  else return false
+  event.preventDefault()
+  return true
+}
+
 function onKeydown(event: KeyboardEvent): void {
+  if (onKeyListKey(event)) return
   if (event.key === 'Escape') {
     event.preventDefault()
     emit('cancel')
@@ -161,9 +225,44 @@ const toolClass =
       :placeholder="placeholder"
       :aria-invalid="tooLong || undefined"
       class="min-h-44 w-full resize-y rounded-lg border border-gray-300 bg-white p-3 font-mono text-sm leading-relaxed text-gray-800 focus:border-blue-500 focus:outline-2 focus:outline-blue-500/30 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-      @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
+      role="combobox"
+      aria-autocomplete="list"
+      :aria-expanded="keyOpen"
+      :aria-controls="keyListId"
+      :aria-activedescendant="keyOpen ? `${keyListId}-${keyActive}` : undefined"
+      @input="onInput"
+      @click="detectKey"
+      @blur="keyText = ''"
       @keydown="onKeydown"
     />
+    <ul
+      v-show="keyOpen"
+      :id="keyListId"
+      role="listbox"
+      :aria-label="t('markdown.keySuggestions')"
+      class="m-0 -mt-1 flex list-none flex-col gap-0.5 rounded-lg border border-gray-200 bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900"
+    >
+      <li
+        v-for="(task, index) in keyResults"
+        :id="`${keyListId}-${index}`"
+        :key="task.id"
+        role="option"
+        :aria-selected="index === keyActive"
+        :class="[
+          'flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 font-text text-sm',
+          index === keyActive
+            ? 'bg-gray-100 dark:bg-gray-800'
+            : 'hover:bg-gray-100 dark:hover:bg-gray-800',
+        ]"
+        @mouseenter="keyActive = index"
+        @mousedown.prevent
+        @click="insertKey(task)"
+      >
+        <span class="shrink-0 font-bold text-gray-500 dark:text-gray-400">{{ task.key }}</span>
+        <span class="min-w-0 flex-1 truncate text-gray-800 dark:text-white">{{ task.title }}</span>
+        <StatusBadge :status="task.status" class="shrink-0 scale-90" />
+      </li>
+    </ul>
     <div
       v-if="tab === 'preview'"
       class="min-h-44 rounded-lg border border-gray-200 p-3 dark:border-gray-700"

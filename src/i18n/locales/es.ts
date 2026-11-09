@@ -41,6 +41,8 @@ const es = {
     delete: 'Eliminar',
   },
   markdown: {
+    keyNotFound: 'No hay ninguna tarea con esa clave',
+    keySuggestions: 'Tareas que coinciden con la clave',
     write: 'Escribir',
     preview: 'Vista previa',
     toolbar: 'Formato',
