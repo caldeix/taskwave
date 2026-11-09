@@ -18,6 +18,14 @@ export interface TaskLink {
   taskId: string
 }
 
+/** Recurrencia (v1.1.0, D-9): cada `interval` días, semanas, meses o años. */
+export const RECURRENCE_FREQS = ['day', 'week', 'month', 'year'] as const
+export type RecurrenceFreq = (typeof RECURRENCE_FREQS)[number]
+export interface Recurrence {
+  freq: RecurrenceFreq
+  interval: number
+}
+
 export interface WebLink {
   url: string
   title: string
@@ -43,6 +51,12 @@ export interface Task {
   resolvedAtMs: number | null
   createdAtMs: number | null
   updatedAtMs: number | null
+  /** Orden manual del backlog (v1.1.0, D-8); `null` = sin ordenar. */
+  rank: number | null
+  /** Lunes de la semana planificada (v1.1.0, D-8). */
+  plannedWeek: DayKey | null
+  /** Recurrencia (v1.1.0, D-9). */
+  recurrence: Recurrence | null
 }
 
 /** Ámbito de la vista principal: todos los proyectos, la bandeja o un proyecto (step-8). */
@@ -76,5 +90,15 @@ export function taskFromData(id: string, data: Record<string, unknown>): Task {
     resolvedAtMs: millis(data.resolvedAt),
     createdAtMs: millis(data.createdAt),
     updatedAtMs: millis(data.updatedAt),
+    rank: typeof data.rank === 'number' ? data.rank : null,
+    plannedWeek: (data.plannedWeek as DayKey | null) ?? null,
+    recurrence: parseRecurrence(data.recurrence),
   }
+}
+
+function parseRecurrence(value: unknown): Recurrence | null {
+  const r = value as Partial<Recurrence> | null | undefined
+  if (!r || !RECURRENCE_FREQS.includes(r.freq as RecurrenceFreq)) return null
+  const interval = Number(r.interval)
+  return Number.isInteger(interval) && interval >= 1 ? { freq: r.freq!, interval } : null
 }
