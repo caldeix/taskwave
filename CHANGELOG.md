@@ -2,6 +2,18 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.0.2] - 2026-11-09
+
+### Añadido
+
+- El tipo de cada relación de una tarea se cambia en su propia fila (bloquea a, está bloqueada por, causa, está causada por, está relacionada con, es subtarea de, tiene como subtarea a). El cambio se guarda en las dos tareas a la vez y la fila pasa a su nuevo grupo; de un vínculo a subtarea o al revés también. Si no se puede (por ejemplo, la tarea ya tiene subtareas), avisa y no cambia nada. En una columna estrecha, el selector se queda en un icono.
+- Al escribir en «Nueva subtarea» se propone crear la subtarea con ese título (Enter) o convertir en subtarea una tarea existente que coincida por clave o título, con las flechas o el ratón. Avisa si la tarea ya es subtarea de otra.
+
+### Cambiado
+
+- El formulario de vincular va en una fila, como en Jira: el tipo de relación a la izquierda y el buscador a la derecha, con el cursor ya dentro.
+- Cuando una tarea no tiene vínculos, pulsar «Sin vínculos» abre el buscador, igual que «Vincular».
+
 ## [1.0.1] - 2026-11-09
 
 ### Corregido

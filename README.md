@@ -9,7 +9,7 @@
 [![Autor: caldeix](https://img.shields.io/badge/autor-caldeix-181717?logo=github&logoColor=white)](https://github.com/caldeix)
 ![© 2026 Caldeix](https://img.shields.io/badge/%C2%A9_2026-Caldeix-D4AF37)
 
-![Version](https://img.shields.io/badge/Version-1.0.1-2563EB.svg)
+![Version](https://img.shields.io/badge/Version-1.0.2-2563EB.svg)
 ![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
@@ -61,6 +61,12 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 ---
 
 ## Changelog
+
+### v1.0.2 — Relaciones más cómodas
+
+- **Tipo de relación editable** — Cada tarea relacionada tiene su selector: de «relacionada con» a «bloquea a», o de vínculo a subtarea, guardado en las dos tareas
+- **Subtareas** — Al escribir propone crear la subtarea o convertir en subtarea una tarea existente
+- **Vincular como en Jira** — Tipo y buscador en una fila, y «Sin vínculos» abre el buscador al pulsarlo
 
 ### v1.0.1 — Corrección
 
