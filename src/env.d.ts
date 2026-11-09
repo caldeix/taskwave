@@ -22,3 +22,8 @@ interface ImportMeta {
 
 /** Versión de package.json, puesta por Vite (`define`). */
 declare const __APP_VERSION__: string
+
+/** API de automatización (v1.3.0), solo con sesión: ver `src/automation/api.ts`. */
+interface Window {
+  taskwave?: import('./automation/api').AutomationApi
+}

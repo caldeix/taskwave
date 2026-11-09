@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Menu, Search } from 'lucide-vue-next'
@@ -7,6 +7,7 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 import SearchDialog from '@/components/search/SearchDialog.vue'
 import TimerDialogs from '@/components/timer/TimerDialogs.vue'
 import TimerPill from '@/components/timer/TimerPill.vue'
+import { createAutomationApi } from '@/automation/api'
 import { useShortcuts } from '@/composables/useShortcuts'
 import { useThemeSync } from '@/composables/useThemeSync'
 import { useProfileStore } from '@/stores/profile'
@@ -16,7 +17,8 @@ import { useUiStore } from '@/stores/ui'
  * Estructura de la app (step-8): menú lateral plegable a la izquierda (guardado en
  * `prefs.sidebarCollapsed`) y el contenido a la derecha. En móvil el menú es un cajón (D-49).
  * El mini cronómetro (step-19) va en el menú y, en móvil, en la cabecera. Los atajos de teclado y
- * el buscador `Ctrl+K` (step-24) funcionan en toda la app.
+ * el buscador `Ctrl+K` (step-24) funcionan en toda la app. Con la sesión dentro se instala la
+ * API de automatización `window.taskwave` (v1.3.0), para usar TaskWave desde Claude.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -24,6 +26,13 @@ const profileStore = useProfileStore()
 const ui = useUiStore()
 useShortcuts()
 useThemeSync()
+
+// API de automatización (v1.3.0): solo con una cuenta activa, que es cuando se monta este layout.
+const automation = createAutomationApi()
+onMounted(() => (window.taskwave = automation))
+onBeforeUnmount(() => {
+  if (window.taskwave === automation) delete window.taskwave
+})
 
 const collapsed = computed(() => profileStore.prefs.sidebarCollapsed)
 const drawerOpen = ref(false)
