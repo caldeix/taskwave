@@ -2,6 +2,13 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.3.1] - 2026-11-12
+
+### Seguridad
+
+- App Check activado con reCAPTCHA Enterprise («Fraud Defense» en Google Cloud), porque el reCAPTCHA clásico v3 está obsoleto en App Check. Cada petición a Firestore y a Auth lleva un token que demuestra que sale de la web publicada; empieza en modo monitorización y, cuando todo llegue verificado, se pasará a obligatorio.
+- La clave de API de Firebase solo se acepta desde la web publicada, el dominio de inicio de sesión de Firebase y `localhost:5173`.
+
 ## [1.3.0] - 2026-11-10
 
 ### Añadido
