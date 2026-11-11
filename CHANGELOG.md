@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.3.2] - 2026-11-12
+
+### Corregido
+
+- Con TaskWave abierta mucho rato (o instalada como app) no salía el aviso «Hay una versión nueva», porque el navegador solo lo comprueba al cargar la página. Ahora, al volver a la pestaña o a la app, se busca la versión nueva (como mucho una vez cada 5 minutos) y sale el aviso; sigue sin recargarse sola.
+
 ## [1.3.1] - 2026-11-12
 
 ### Seguridad
