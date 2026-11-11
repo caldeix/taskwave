@@ -49,7 +49,7 @@ Cada push a `main` lanza el workflow [`.github/workflows/deploy.yml`](../.github
 - **Rutas profundas:** la build copia `index.html` como `404.html`, que Pages sirve para cualquier ruta que no existe; la app carga y el router muestra la ruta pedida.
 - **CSP:** en producción la build añade un `<meta http-equiv="Content-Security-Policy">` con el hash de los scripts en línea (`src/lib/csp.ts`). No se añade con los emuladores.
 - **Reglas e índices de Firestore:** se despliegan a mano (no se guarda ningún token de Firebase en GitHub): `npx firebase login` una vez y después `npx firebase deploy --only firestore`.
-- **App Check:** clave de sitio de reCAPTCHA v3 en `VITE_APPCHECK_SITE_KEY` (y en el secreto). En desarrollo se usa un token de depuración registrado en la consola de Firebase.
+- **App Check:** proveedor reCAPTCHA Enterprise, que en Google Cloud se llama «Fraud Defense» (el reCAPTCHA clásico v3 está obsoleto en App Check; la API se habilita sin cuenta de pago y es gratis hasta 10 000 verificaciones al mes). La clave de sitio, pública, va en `VITE_APPCHECK_SITE_KEY` y en el secreto del mismo nombre, y la app está registrada en Firebase → App Check con esa clave. En desarrollo se usa un token de depuración registrado en la consola de Firebase. Primero se deja en monitorización y, cuando todas las peticiones llegan verificadas, se activa «Aplicar» en Firestore y Authentication.
 
 ## API de automatización
 
