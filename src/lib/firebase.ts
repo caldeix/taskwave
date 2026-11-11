@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { ReCaptchaV3Provider, initializeAppCheck } from 'firebase/app-check'
+import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check'
 import { connectAuthEmulator, getAuth } from 'firebase/auth'
 import {
   clearIndexedDbPersistence,
@@ -29,8 +29,10 @@ export const firebaseApp = initializeApp({
 
 /**
  * App Check (step-27, D-3): cada petición a Firebase lleva un token que demuestra que sale de
- * esta web (reCAPTCHA v3), así que las llamadas desde scripts u otras webs se rechazan cuando
- * se activa la obligatoriedad en la consola. Va antes que Auth y Firestore.
+ * esta web, así que las llamadas desde scripts u otras webs se rechazan cuando se activa la
+ * obligatoriedad en la consola. Va antes que Auth y Firestore.
+ * - Proveedor: reCAPTCHA Enterprise, que en Google Cloud se llama «Fraud Defense» (el reCAPTCHA
+ *   clásico v3 está obsoleto en App Check). Clave de sitio en `VITE_APPCHECK_SITE_KEY` (pública).
  * - Sin clave (`VITE_APPCHECK_SITE_KEY` vacía) o con los emuladores, no se activa.
  * - En desarrollo usa un token de depuración (se registra en la consola de Firebase):
  *   `VITE_APPCHECK_DEBUG_TOKEN` o, si no hay, uno que el SDK muestra en la consola del navegador.
@@ -41,7 +43,7 @@ if (!usingEmulators && appCheckSiteKey) {
     (self as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
       import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true
   initializeAppCheck(firebaseApp, {
-    provider: new ReCaptchaV3Provider(appCheckSiteKey),
+    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
     isTokenAutoRefreshEnabled: true,
   })
 }
