@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   estimateAccuracy,
+  koSummary,
   heatmap,
   minutesByDay,
   minutesByProject,
@@ -144,6 +145,7 @@ describe('estimateAccuracy (D-31)', () => {
       t('C', 100, 105), // +5 %: en lo estimado
       t('D', null, 300), // sin estimado: no cuenta
       t('E', 100, 500, 'discarded'), // descartada: no cuenta
+      t('F', 100, 400, 'ko'), // KO: no se hizo, no cuenta (v1.3.3)
     ])
     expect(acc.rows.map((r) => [r.task.key, r.deviationPct])).toEqual([
       ['A', 50],
@@ -151,10 +153,34 @@ describe('estimateAccuracy (D-31)', () => {
       ['C', 5],
     ])
     expect(acc).toMatchObject({ meanAbsPct: 35, totalPct: -11, over: 1, under: 1, onTarget: 1 })
+    // Horas: 400 min estimados, 355 gastados; de media se fallan (50 + 100 + 5) / 3 ≈ 52 min.
+    expect(acc).toMatchObject({ estimatedMin: 400, spentMin: 355, meanAbsMin: 52 })
   })
 
   it('sin tareas con estimado no hay medias', () => {
-    expect(estimateAccuracy([t('D', null, 30)])).toMatchObject({ rows: [], meanAbsPct: null })
+    expect(estimateAccuracy([t('D', null, 30)])).toMatchObject({
+      rows: [],
+      meanAbsPct: null,
+      meanAbsMin: null,
+      estimatedMin: 0,
+    })
+  })
+})
+
+describe('koSummary (v1.3.3)', () => {
+  it('cuántas KO, qué parte de las cerradas y el tiempo dedicado', () => {
+    expect(
+      koSummary([
+        { status: 'done', spentMin: 60 },
+        { status: 'ko', spentMin: 90 },
+        { status: 'ko', spentMin: 0 },
+        { status: 'discarded', spentMin: 30 },
+      ]),
+    ).toEqual({ ko: 2, closed: 4, pct: 50, lostMin: 90 })
+  })
+
+  it('sin tareas cerradas no hay porcentaje', () => {
+    expect(koSummary([])).toEqual({ ko: 0, closed: 0, pct: null, lostMin: 0 })
   })
 })
 

@@ -167,8 +167,13 @@ export interface Accuracy {
   rows: AccuracyRow[]
   /** Media de las desviaciones en valor absoluto (lo que se suele fallar), en %. */
   meanAbsPct: number | null
+  /** Lo mismo en minutos: cuánto se falla de media por tarea, por arriba o por abajo. */
+  meanAbsMin: number | null
   /** Desviación del total: (Σ gastado − Σ estimado) / Σ estimado, en %. */
   totalPct: number | null
+  /** Σ estimado y Σ gastado de las tareas que cuentan (v1.3.3). */
+  estimatedMin: number
+  spentMin: number
   over: number
   under: number
   onTarget: number
@@ -177,15 +182,16 @@ export interface Accuracy {
 /** Margen para contar una tarea como «en lo estimado» (±10 %). */
 export const ON_TARGET_PCT = 10
 
+type AccuracyTask = Pick<Task, 'id' | 'key' | 'title' | 'estimateMin' | 'spentMin' | 'status'>
+
 /**
  * Acierto de las estimaciones de las tareas cerradas en el periodo con estimado (D-31): cuánto
- * se pasaron o sobró. Las descartadas no cuentan (no se terminaron).
+ * se pasaron o sobró. Solo cuentan las Realizadas: las descartadas y las KO no se terminaron
+ * (las KO tienen su propio resumen, `koSummary`, v1.3.3).
  */
-export function estimateAccuracy(
-  tasks: Pick<Task, 'id' | 'key' | 'title' | 'estimateMin' | 'spentMin' | 'status'>[],
-): Accuracy {
+export function estimateAccuracy(tasks: AccuracyTask[]): Accuracy {
   const rows = tasks
-    .filter((t) => t.status !== 'discarded' && t.estimateMin && t.estimateMin > 0)
+    .filter((t) => t.status === 'done' && t.estimateMin && t.estimateMin > 0)
     .map((task) => ({
       task,
       estimateMin: task.estimateMin!,
@@ -193,17 +199,54 @@ export function estimateAccuracy(
       deviationPct: Math.round(((task.spentMin - task.estimateMin!) / task.estimateMin!) * 100),
     }))
     .sort((a, b) => Math.abs(b.deviationPct) - Math.abs(a.deviationPct))
-  if (!rows.length)
-    return { rows, meanAbsPct: null, totalPct: null, over: 0, under: 0, onTarget: 0 }
   const est = rows.reduce((s, r) => s + r.estimateMin, 0)
   const spent = rows.reduce((s, r) => s + r.spentMin, 0)
+  if (!rows.length)
+    return {
+      rows,
+      meanAbsPct: null,
+      meanAbsMin: null,
+      totalPct: null,
+      estimatedMin: 0,
+      spentMin: 0,
+      over: 0,
+      under: 0,
+      onTarget: 0,
+    }
   return {
     rows,
     meanAbsPct: Math.round(rows.reduce((s, r) => s + Math.abs(r.deviationPct), 0) / rows.length),
+    meanAbsMin: Math.round(
+      rows.reduce((s, r) => s + Math.abs(r.spentMin - r.estimateMin), 0) / rows.length,
+    ),
     totalPct: Math.round(((spent - est) / est) * 100),
+    estimatedMin: est,
+    spentMin: spent,
     over: rows.filter((r) => r.deviationPct > ON_TARGET_PCT).length,
     under: rows.filter((r) => r.deviationPct < -ON_TARGET_PCT).length,
     onTarget: rows.filter((r) => Math.abs(r.deviationPct) <= ON_TARGET_PCT).length,
+  }
+}
+
+export interface KoSummary {
+  /** Tareas cerradas como KO en el periodo. */
+  ko: number
+  /** Todas las cerradas en el periodo (Realizadas, Descartadas y KO). */
+  closed: number
+  /** % de KO sobre las cerradas (`null` si no se cerró ninguna). */
+  pct: number | null
+  /** Horas registradas en las KO: tiempo que no dio fruto. */
+  lostMin: number
+}
+
+/** Resumen de las tareas KO del periodo (v1.3.3): cuántas, qué parte y cuánto tiempo se perdió. */
+export function koSummary(tasks: Pick<Task, 'status' | 'spentMin'>[]): KoSummary {
+  const ko = tasks.filter((t) => t.status === 'ko')
+  return {
+    ko: ko.length,
+    closed: tasks.length,
+    pct: tasks.length ? Math.round((ko.length / tasks.length) * 100) : null,
+    lostMin: ko.reduce((s, t) => s + t.spentMin, 0),
   }
 }
 
