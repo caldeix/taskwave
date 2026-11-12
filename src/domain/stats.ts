@@ -177,6 +177,12 @@ export interface Accuracy {
   over: number
   under: number
   onTarget: number
+  /** De las que se pasaron (más del margen): media de lo que se pasaron, en minutos y en %. */
+  overMeanMin: number | null
+  overMeanPct: number | null
+  /** De las que les sobró tiempo (más del margen): media de lo que sobró, en minutos y en %. */
+  underMeanMin: number | null
+  underMeanPct: number | null
 }
 
 /** Margen para contar una tarea como «en lo estimado» (±10 %). */
@@ -212,7 +218,15 @@ export function estimateAccuracy(tasks: AccuracyTask[]): Accuracy {
       over: 0,
       under: 0,
       onTarget: 0,
+      overMeanMin: null,
+      overMeanPct: null,
+      underMeanMin: null,
+      underMeanPct: null,
     }
+  const overRows = rows.filter((r) => r.deviationPct > ON_TARGET_PCT)
+  const underRows = rows.filter((r) => r.deviationPct < -ON_TARGET_PCT)
+  const mean = (list: AccuracyRow[], value: (r: AccuracyRow) => number) =>
+    list.length ? Math.round(list.reduce((sum, r) => sum + value(r), 0) / list.length) : null
   return {
     rows,
     meanAbsPct: Math.round(rows.reduce((s, r) => s + Math.abs(r.deviationPct), 0) / rows.length),
@@ -222,9 +236,13 @@ export function estimateAccuracy(tasks: AccuracyTask[]): Accuracy {
     totalPct: Math.round(((spent - est) / est) * 100),
     estimatedMin: est,
     spentMin: spent,
-    over: rows.filter((r) => r.deviationPct > ON_TARGET_PCT).length,
-    under: rows.filter((r) => r.deviationPct < -ON_TARGET_PCT).length,
+    over: overRows.length,
+    under: underRows.length,
     onTarget: rows.filter((r) => Math.abs(r.deviationPct) <= ON_TARGET_PCT).length,
+    overMeanMin: mean(overRows, (r) => r.spentMin - r.estimateMin),
+    overMeanPct: mean(overRows, (r) => r.deviationPct),
+    underMeanMin: mean(underRows, (r) => r.estimateMin - r.spentMin),
+    underMeanPct: mean(underRows, (r) => -r.deviationPct),
   }
 }
 

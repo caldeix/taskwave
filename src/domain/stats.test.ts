@@ -155,6 +155,13 @@ describe('estimateAccuracy (D-31)', () => {
     expect(acc).toMatchObject({ meanAbsPct: 35, totalPct: -11, over: 1, under: 1, onTarget: 1 })
     // Horas: 400 min estimados, 355 gastados; de media se fallan (50 + 100 + 5) / 3 ≈ 52 min.
     expect(acc).toMatchObject({ estimatedMin: 400, spentMin: 355, meanAbsMin: 52 })
+    // A se pasó 50 min (50 %) y a B le sobraron 100 min (50 %); C entra en el margen.
+    expect(acc).toMatchObject({
+      overMeanMin: 50,
+      overMeanPct: 50,
+      underMeanMin: 100,
+      underMeanPct: 50,
+    })
   })
 
   it('sin tareas con estimado no hay medias', () => {
