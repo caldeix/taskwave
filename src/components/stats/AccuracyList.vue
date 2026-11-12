@@ -9,7 +9,7 @@ import type { AccuracyRow } from '@/domain/stats'
 
 /**
  * Desviación de cada tarea respecto a su estimado (step-23, D-31): barra divergente desde el
- * centro, en azul si sobró tiempo y en coral si se pasó (hasta ±100 %; más allá, la barra llega
+ * centro, en verde si sobró tiempo y en coral si se pasó (hasta ±100 %; más allá, la barra llega
  * al borde y el número lo dice). El texto nunca va en el color de la barra.
  */
 const props = defineProps<{ rows: AccuracyRow[]; max?: number }>()
@@ -22,7 +22,7 @@ const limit = computed(() => props.max ?? 10)
 const shown = computed(() => (showAll.value ? props.rows : props.rows.slice(0, limit.value)))
 
 const width = (pct: number) => `${Math.min(100, Math.abs(pct)) / 2}%`
-const signed = (pct: number) => (pct > 0 ? `+${pct} %` : `${pct} %`)
+const signed = (pct: number) => (pct > 0 ? `+${pct} %` : pct < 0 ? `−${Math.abs(pct)} %` : '0 %')
 const detail = (r: AccuracyRow) =>
   t('stats.accuracy.detail', {
     spent: formatHours(r.spentMin),
@@ -60,7 +60,7 @@ const detail = (r: AccuracyRow) =>
           />
           <span
             v-else-if="row.deviationPct < 0"
-            class="absolute inset-y-0 right-1/2 rounded-l bg-blue-500"
+            class="absolute inset-y-0 right-1/2 rounded-l bg-emerald-500"
             :style="{ width: width(row.deviationPct) }"
           />
         </span>
@@ -73,7 +73,7 @@ const detail = (r: AccuracyRow) =>
       class="flex flex-wrap items-center gap-4 font-text text-xs text-gray-500 dark:text-gray-400"
     >
       <span class="inline-flex items-center gap-1.5">
-        <span class="h-3 w-3 rounded-sm bg-blue-500" aria-hidden="true" />
+        <span class="h-3 w-3 rounded-sm bg-emerald-500" aria-hidden="true" />
         {{ t('stats.accuracy.under') }}
       </span>
       <span class="inline-flex items-center gap-1.5">

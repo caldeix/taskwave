@@ -15,6 +15,7 @@ import { PROJECT_COLOR_CLASSES } from '@/domain/projects'
 import {
   STATS_PERIODS,
   estimateAccuracy,
+  koSummary,
   heatmap,
   minutesByDay,
   minutesByProject,
@@ -153,10 +154,13 @@ const byProject = computed(() => projectItems(minutesByProject(logs.value)))
 const byTag = computed(() => tagItems(minutesByTag(logs.value, data.value?.tasks ?? new Map())))
 const heat = computed(() => heatmap(days.value))
 const accuracy = computed(() => estimateAccuracy(data.value?.closed ?? []))
+const ko = computed(() => koSummary(data.value?.closed ?? []))
+/** «+5h» o «−2h 30m»: diferencia entre lo gastado y lo estimado. */
+const signedHours = (min: number) =>
+  min === 0 ? '0h' : `${min > 0 ? '+' : '−'}${formatHours(Math.abs(min))}`
 
-const rowsOf = (items: { label?: string; long?: string; minutes: number }[]) =>
-  items.map((i) => [i.long ?? i.label ?? '', formatHours(i.minutes)] as [string, string])
-const signed = (pct: number | null) => (pct === null ? '—' : pct > 0 ? `+${pct} %` : `${pct} %`)
+const signed = (pct: number | null) =>
+  pct === null ? '—' : pct > 0 ? `+${pct} %` : pct < 0 ? `−${Math.abs(pct)} %` : '0 %'
 
 const segment =
   'h-9 cursor-pointer border-0 px-3 font-text text-sm transition focus-visible:outline-2 focus-visible:outline-blue-600'
@@ -264,29 +268,23 @@ const iconButton =
       </p>
 
       <div class="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard
-          v-if="length <= 31"
-          :title="t('stats.byDay')"
-          :rows="rowsOf(dayColumns)"
-          class="xl:col-span-2"
-        >
+        <ChartCard v-if="length <= 31" :title="t('stats.byDay')" class="xl:col-span-2">
           <ColumnChart :columns="dayColumns" />
         </ChartCard>
         <ChartCard
           v-if="length > 7"
           :title="t('stats.byWeek')"
           :subtitle="t('stats.byWeekHint')"
-          :rows="rowsOf(weekColumns)"
           class="xl:col-span-2"
         >
           <ColumnChart :columns="weekColumns" />
         </ChartCard>
 
-        <ChartCard :title="t('stats.byProject')" :rows="rowsOf(byProject)">
+        <ChartCard :title="t('stats.byProject')">
           <BarList v-if="byProject.length" :items="byProject" :total="summary.totalMin" />
           <p v-else class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">—</p>
         </ChartCard>
-        <ChartCard :title="t('stats.byTag')" :subtitle="t('stats.byTagHint')" :rows="rowsOf(byTag)">
+        <ChartCard :title="t('stats.byTag')" :subtitle="t('stats.byTagHint')">
           <BarList v-if="byTag.length" :items="byTag" :total="summary.totalMin" />
           <p v-else class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">—</p>
         </ChartCard>
@@ -302,25 +300,30 @@ const iconButton =
         <ChartCard
           :title="t('stats.accuracy.title')"
           :subtitle="t('stats.accuracy.subtitle')"
-          :rows="
-            accuracy.rows.map((r) => [
-              `${r.task.key} ${r.task.title}`,
-              `${formatHours(r.spentMin)} / ${formatHours(r.estimateMin)} · ${signed(r.deviationPct)}`,
-            ])
-          "
           class="xl:col-span-2"
         >
-          <template v-if="accuracy.rows.length">
-            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div
+            v-if="accuracy.rows.length || ko.ko"
+            class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
+          >
+            <template v-if="accuracy.rows.length">
               <StatTile
                 :label="t('stats.accuracy.meanAbs')"
-                :value="`${accuracy.meanAbsPct} %`"
-                :hint="t('stats.accuracy.meanAbsHint')"
+                :value="`±${accuracy.meanAbsPct} %`"
+                :hint="
+                  t('stats.accuracy.meanAbsHint', { hours: formatHours(accuracy.meanAbsMin ?? 0) })
+                "
               />
               <StatTile
                 :label="t('stats.accuracy.total')"
                 :value="signed(accuracy.totalPct)"
-                :hint="t('stats.accuracy.totalHint')"
+                :hint="
+                  t('stats.accuracy.totalHint', {
+                    spent: formatHours(accuracy.spentMin),
+                    estimate: formatHours(accuracy.estimatedMin),
+                    diff: signedHours(accuracy.spentMin - accuracy.estimatedMin),
+                  })
+                "
               />
               <StatTile
                 :label="t('stats.accuracy.onTarget')"
@@ -329,13 +332,41 @@ const iconButton =
               />
               <StatTile
                 :label="t('stats.accuracy.overUnder')"
-                :value="`${accuracy.over} / ${accuracy.under}`"
                 :hint="t('stats.accuracy.overUnderHint')"
-              />
-            </div>
-            <AccuracyList :rows="accuracy.rows" />
-          </template>
-          <p v-else class="m-0 font-text text-sm text-gray-500 dark:text-gray-400">
+              >
+                <template #value>
+                  <span
+                    class="text-coral-700 dark:text-coral-500"
+                    :title="t('stats.accuracy.over')"
+                    >{{ accuracy.over }}</span
+                  >
+                  <span class="text-gray-400 dark:text-gray-500"> / </span>
+                  <span
+                    class="text-emerald-700 dark:text-emerald-500"
+                    :title="t('stats.accuracy.under')"
+                    >{{ accuracy.under }}</span
+                  >
+                  <span class="sr-only">{{
+                    t('stats.accuracy.overUnderSr', { over: accuracy.over, under: accuracy.under })
+                  }}</span>
+                </template>
+              </StatTile>
+            </template>
+            <StatTile
+              :label="t('stats.ko.label')"
+              :value="t('stats.ko.value', { ko: ko.ko, closed: ko.closed })"
+              :hint="
+                ko.lostMin
+                  ? t('stats.ko.hintLost', { pct: ko.pct ?? 0, hours: formatHours(ko.lostMin) })
+                  : t('stats.ko.hintNone', { pct: ko.pct ?? 0 })
+              "
+            />
+          </div>
+          <AccuracyList v-if="accuracy.rows.length" :rows="accuracy.rows" />
+          <p
+            v-if="!accuracy.rows.length"
+            class="m-0 font-text text-sm text-gray-500 dark:text-gray-400"
+          >
             {{ t('stats.accuracy.empty') }}
           </p>
         </ChartCard>
