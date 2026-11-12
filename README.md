@@ -74,7 +74,7 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 
 ### v1.3.3 — Estadísticas más claras
 
-- **Acierto de las estimaciones** — Sin las KO, con una ficha propia para ellas y el tiempo perdido; las desviaciones dicen las horas, y lo que sobró sale en verde
+- **Acierto de las estimaciones** — Sin las KO, con una ficha propia para ellas y el tiempo perdido; dice con palabras y en horas cuánto te pasaste (en coral) y cuánto sobró (en verde)
 
 ### v1.3.2 — Aviso de versión nueva
 

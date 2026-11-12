@@ -8,8 +8,8 @@ Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](h
 
 - Estadísticas: se quita «Ver como tabla» de los gráficos.
 - Acierto de las estimaciones: las tareas KO ya no cuentan (no se terminaron). En su lugar, una ficha «KO» con cuántas hay de las cerradas, su porcentaje y el tiempo perdido en ellas, si se le dedicó.
-- La desviación media dice cuántas horas se fallan de media por tarea, y la del total, las horas gastadas frente a las estimadas y la diferencia.
-- En «Se pasaron / sobró», las que se pasaron van en coral y a las que les sobró, en verde; la barra de «Sobró tiempo» también pasa a verde.
+- Las fichas dicen con palabras si se pasaron o sobró, sin signos ni «por arriba o por abajo»: «Se pasaron» (en coral), con cuánto de media en horas y en %; «Sobró tiempo» (en verde), igual; «En lo estimado»; y «Total del periodo» («59 % menos», con las horas que sobraron o en las que te pasaste, y las gastadas frente a las estimadas). Se quita la desviación media, que mezclaba las dos cosas.
+- En la lista de tareas, «100 % más» o «82 % menos» en lugar de «+100 %» o «−82 %», y la barra de «Sobró tiempo» pasa a verde.
 
 ## [1.3.2] - 2026-11-12
 
