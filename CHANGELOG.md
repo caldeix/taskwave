@@ -2,6 +2,12 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.3.4] - 2026-11-13
+
+### Corregido
+
+- Acierto de las estimaciones: la lista pintaba en coral o en verde las tareas que se desviaban menos de un 10 %, pero las fichas las cuentan como «En lo estimado», así que no cuadraban (se veían 3 que se pasaron y la ficha decía 2). Ahora esas tareas salen en gris con «en lo estimado», hay leyenda para el gris, y las fichas de «Se pasaron» y «Sobró tiempo» aclaran que son las de más de un 10 %.
+
 ## [1.3.3] - 2026-11-13
 
 ### Cambiado
