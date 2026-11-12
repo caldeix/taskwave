@@ -9,7 +9,7 @@
 [![Autor: caldeix](https://img.shields.io/badge/autor-caldeix-181717?logo=github&logoColor=white)](https://github.com/caldeix)
 ![© 2026 Caldeix](https://img.shields.io/badge/%C2%A9_2026-Caldeix-D4AF37)
 
-![Version](https://img.shields.io/badge/Version-1.3.2-2563EB.svg)
+![Version](https://img.shields.io/badge/Version-1.3.3-2563EB.svg)
 ![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
@@ -71,6 +71,10 @@ Sin servidor propio: la web es estática (GitHub Pages) y los datos se guardan e
 ---
 
 ## Changelog
+
+### v1.3.3 — Estadísticas más claras
+
+- **Acierto de las estimaciones** — Sin las KO, con una ficha propia para ellas y el tiempo perdido; las desviaciones dicen las horas, y lo que sobró sale en verde
 
 ### v1.3.2 — Aviso de versión nueva
 

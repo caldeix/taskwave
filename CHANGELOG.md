@@ -2,6 +2,15 @@
 
 Todos los cambios relevantes de TaskWave. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.3.3] - 2026-11-13
+
+### Cambiado
+
+- Estadísticas: se quita «Ver como tabla» de los gráficos.
+- Acierto de las estimaciones: las tareas KO ya no cuentan (no se terminaron). En su lugar, una ficha «KO» con cuántas hay de las cerradas, su porcentaje y el tiempo perdido en ellas, si se le dedicó.
+- La desviación media dice cuántas horas se fallan de media por tarea, y la del total, las horas gastadas frente a las estimadas y la diferencia.
+- En «Se pasaron / sobró», las que se pasaron van en coral y a las que les sobró, en verde; la barra de «Sobró tiempo» también pasa a verde.
+
 ## [1.3.2] - 2026-11-12
 
 ### Corregido
