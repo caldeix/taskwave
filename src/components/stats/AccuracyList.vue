@@ -22,7 +22,13 @@ const limit = computed(() => props.max ?? 10)
 const shown = computed(() => (showAll.value ? props.rows : props.rows.slice(0, limit.value)))
 
 const width = (pct: number) => `${Math.min(100, Math.abs(pct)) / 2}%`
-const signed = (pct: number) => (pct > 0 ? `+${pct} %` : pct < 0 ? `−${Math.abs(pct)} %` : '0 %')
+/** «100 % más» o «82 % menos», sin signos: el color de la barra ya dice cuál es. */
+const signed = (pct: number) =>
+  pct > 0
+    ? t('stats.accuracy.pctMore', { pct })
+    : pct < 0
+      ? t('stats.accuracy.pctLess', { pct: -pct })
+      : t('stats.accuracy.exact')
 const detail = (r: AccuracyRow) =>
   t('stats.accuracy.detail', {
     spent: formatHours(r.spentMin),
@@ -36,7 +42,7 @@ const detail = (r: AccuracyRow) =>
       <li
         v-for="row in shown"
         :key="row.task.id"
-        class="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)_3.5rem] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_4rem] items-center gap-3"
+        class="grid grid-cols-[minmax(0,7rem)_minmax(0,1fr)_5.5rem] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_6.5rem] items-center gap-3"
       >
         <RouterLink
           :to="{ name: 'task', params: { taskKey: row.task.key } }"

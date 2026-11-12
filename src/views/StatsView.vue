@@ -155,12 +155,26 @@ const byTag = computed(() => tagItems(minutesByTag(logs.value, data.value?.tasks
 const heat = computed(() => heatmap(days.value))
 const accuracy = computed(() => estimateAccuracy(data.value?.closed ?? []))
 const ko = computed(() => koSummary(data.value?.closed ?? []))
-/** «+5h» o «−2h 30m»: diferencia entre lo gastado y lo estimado. */
-const signedHours = (min: number) =>
-  min === 0 ? '0h' : `${min > 0 ? '+' : '−'}${formatHours(Math.abs(min))}`
-
-const signed = (pct: number | null) =>
-  pct === null ? '—' : pct > 0 ? `+${pct} %` : pct < 0 ? `−${Math.abs(pct)} %` : '0 %'
+/** Total del periodo dicho con palabras: «59 % menos» o «12 % más», sin signos. */
+const totalValue = computed(() => {
+  const pct = accuracy.value.totalPct ?? 0
+  if (pct === 0) return t('stats.accuracy.exact')
+  return t(pct > 0 ? 'stats.accuracy.pctMore' : 'stats.accuracy.pctLess', { pct: Math.abs(pct) })
+})
+const totalClass = computed(() => {
+  const pct = accuracy.value.totalPct ?? 0
+  if (pct > 0) return 'text-coral-700 dark:text-coral-500'
+  if (pct < 0) return 'text-emerald-700 dark:text-emerald-500'
+  return ''
+})
+const totalHint = computed(() => {
+  const { spentMin, estimatedMin } = accuracy.value
+  const diff = spentMin - estimatedMin
+  const base = { spent: formatHours(spentMin), estimate: formatHours(estimatedMin) }
+  if (diff > 0) return t('stats.accuracy.totalOver', { ...base, hours: formatHours(diff) })
+  if (diff < 0) return t('stats.accuracy.totalUnder', { ...base, hours: formatHours(-diff) })
+  return t('stats.accuracy.totalExact', base)
+})
 
 const segment =
   'h-9 cursor-pointer border-0 px-3 font-text text-sm transition focus-visible:outline-2 focus-visible:outline-blue-600'
@@ -308,47 +322,55 @@ const iconButton =
           >
             <template v-if="accuracy.rows.length">
               <StatTile
-                :label="t('stats.accuracy.meanAbs')"
-                :value="`±${accuracy.meanAbsPct} %`"
+                :label="t('stats.accuracy.overTitle')"
                 :hint="
-                  t('stats.accuracy.meanAbsHint', { hours: formatHours(accuracy.meanAbsMin ?? 0) })
+                  accuracy.over
+                    ? t('stats.accuracy.overHint', {
+                        hours: formatHours(accuracy.overMeanMin ?? 0),
+                        pct: accuracy.overMeanPct ?? 0,
+                      })
+                    : t('stats.accuracy.noneOver')
                 "
-              />
-              <StatTile
-                :label="t('stats.accuracy.total')"
-                :value="signed(accuracy.totalPct)"
-                :hint="
-                  t('stats.accuracy.totalHint', {
-                    spent: formatHours(accuracy.spentMin),
-                    estimate: formatHours(accuracy.estimatedMin),
-                    diff: signedHours(accuracy.spentMin - accuracy.estimatedMin),
-                  })
-                "
-              />
-              <StatTile
-                :label="t('stats.accuracy.onTarget')"
-                :value="String(accuracy.onTarget)"
-                :hint="t('stats.accuracy.onTargetHint', { n: accuracy.rows.length })"
-              />
-              <StatTile
-                :label="t('stats.accuracy.overUnder')"
-                :hint="t('stats.accuracy.overUnderHint')"
               >
                 <template #value>
-                  <span
-                    class="text-coral-700 dark:text-coral-500"
-                    :title="t('stats.accuracy.over')"
-                    >{{ accuracy.over }}</span
+                  <span class="text-coral-700 dark:text-coral-500">{{ accuracy.over }}</span>
+                  <span class="text-base font-normal text-gray-500 dark:text-gray-400">
+                    {{ ` ${t('stats.accuracy.ofTotal', { n: accuracy.rows.length })}` }}</span
                   >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-emerald-700 dark:text-emerald-500"
-                    :title="t('stats.accuracy.under')"
-                    >{{ accuracy.under }}</span
+                </template>
+              </StatTile>
+              <StatTile
+                :label="t('stats.accuracy.underTitle')"
+                :hint="
+                  accuracy.under
+                    ? t('stats.accuracy.underHint', {
+                        hours: formatHours(accuracy.underMeanMin ?? 0),
+                        pct: accuracy.underMeanPct ?? 0,
+                      })
+                    : t('stats.accuracy.noneUnder')
+                "
+              >
+                <template #value>
+                  <span class="text-emerald-700 dark:text-emerald-500">{{ accuracy.under }}</span>
+                  <span class="text-base font-normal text-gray-500 dark:text-gray-400">
+                    {{ ` ${t('stats.accuracy.ofTotal', { n: accuracy.rows.length })}` }}</span
                   >
-                  <span class="sr-only">{{
-                    t('stats.accuracy.overUnderSr', { over: accuracy.over, under: accuracy.under })
-                  }}</span>
+                </template>
+              </StatTile>
+              <StatTile
+                :label="t('stats.accuracy.onTarget')"
+                :hint="t('stats.accuracy.onTargetHint')"
+              >
+                <template #value>
+                  <span>{{ accuracy.onTarget }}</span>
+                  <span class="text-base font-normal text-gray-500 dark:text-gray-400">
+                    {{ ` ${t('stats.accuracy.ofTotal', { n: accuracy.rows.length })}` }}</span
+                  >
+                </template>
+              </StatTile>
+              <StatTile :label="t('stats.accuracy.total')" :hint="totalHint">
+                <template #value>
+                  <span :class="totalClass">{{ totalValue }}</span>
                 </template>
               </StatTile>
             </template>
